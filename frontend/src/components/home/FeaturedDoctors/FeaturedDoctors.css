@@ -1,0 +1,64 @@
+.featured-section {
+  padding: 70px 0;
+  background: #f1f5f9;
+}
+
+.section-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 32px;
+  color: #0f172a;
+}
+
+.doctor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.doctor-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  border: 2px solid #2563eb;
+}
+
+.doctor-card h3 {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.doctor-card p {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.doctor-card span {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.actions button {
+  flex: 1;
+  height: 38px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.call {
+  background: #2563eb;
+  color: #fff;
+}
+
+.whatsapp {
+  background: #22c55e;
+  color: #fff;
+}

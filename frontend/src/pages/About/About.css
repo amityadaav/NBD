@@ -1,0 +1,698 @@
+/* =========================================
+   ABOUT PAGE
+========================================= */
+:root {
+  --primary: #0f766e;
+  --text: #64748b;
+  --light: #f8fafc;
+}
+
+.about-page {
+  width: 100%;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+
+/* =========================================
+   HERO
+========================================= */
+
+.about-hero {
+  margin: auto;
+
+  min-height: 520px;
+
+  padding: 80px 40px;
+
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+
+  align-items: center;
+
+  gap: 70px;
+}
+
+
+.about-hero-content {
+  max-width: 650px;
+}
+
+
+.about-badge {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 8px 14px;
+
+  border-radius: 30px;
+
+  border: 1px solid #0f766e;
+
+  background: var(--light);
+
+  color: var(--text);
+
+  font-size: 13px;
+
+  font-weight: 600;
+}
+
+
+.about-hero h1 {
+  margin: 22px 0 20px;
+
+  font-size: clamp(42px, 5vw, 55px);
+
+  line-height: 1.08;
+
+  letter-spacing: -1.5px;
+}
+
+
+.about-hero h1 span {
+  color: var(--primary);
+}
+
+
+.about-hero-content > p {
+  max-width: 600px;
+
+  margin: 0;
+
+  font-size: 17px;
+
+  line-height: 1.8;
+}
+
+
+.about-hero-actions {
+  display: flex;
+
+  gap: 14px;
+
+  margin-top: 30px;
+}
+
+
+.about-primary-btn,
+.about-secondary-btn {
+  height: 48px;
+
+  padding: 0 20px;
+
+  border-radius: var(--radius);
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  font-weight: 600;
+
+  border: none;
+}
+
+
+.about-primary-btn {
+  background: var(--primary);
+
+  color: var(--primary-foreground);
+}
+
+
+.about-secondary-btn {
+  background: var(--card);
+
+  color: var(--primary);
+
+  border: 1px solid var(--border);
+}
+
+
+/* =========================================
+   HERO CARD
+========================================= */
+
+.about-hero-card {
+  background: var(--card);
+
+  border-radius: 20px;
+
+  padding: 35px;
+
+  box-shadow: var(--card-shadow);
+
+  border: 1px solid var(--border);
+}
+
+
+.hero-card-icon {
+  width: 58px;
+  height: 58px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 16px;
+
+  background: var(--accent);
+
+  color: var(--primary);
+}
+
+
+.about-hero-card h3 {
+  margin: 22px 0 8px;
+
+  font-family: "DM Sans", sans-serif;
+
+  font-size: 22px;
+}
+
+
+.about-hero-card p {
+  font-size: 14px;
+
+  line-height: 1.7;
+}
+
+
+.hero-search {
+  height: 50px;
+
+  margin-top: 22px;
+
+  padding: 0 15px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius);
+
+  color: var(--muted-foreground);
+}
+
+
+.hero-location {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  margin-top: 15px;
+
+  color: var(--primary);
+
+  font-size: 13px;
+
+  font-weight: 600;
+}
+
+
+/* =========================================
+   ABOUT SECTION
+========================================= */
+
+.about-section {
+
+  margin: auto;
+
+  padding: 90px 40px;
+
+  display: grid;
+
+  grid-template-columns: 0.8fr 1.2fr;
+
+  gap: 100px;
+
+  border-top: 1px solid var(--border);
+}
+
+
+.about-section-heading span,
+.why-heading span,
+.how-heading span,
+.about-cta span {
+  font-size: 12px;
+
+  font-weight: 700;
+
+  letter-spacing: 1.5px;
+
+  color: var(--primary);
+}
+
+
+.about-section-heading h2,
+.why-heading h2,
+.how-heading h2 {
+  margin: 12px 0 0;
+
+  font-size: 38px;
+
+  line-height: 1.2;
+}
+
+
+.about-section-content p {
+  margin: 0 0 18px;
+
+  font-size: 15px;
+
+  line-height: 1.9;
+}
+
+
+/* =========================================
+   MISSION
+========================================= */
+
+.mission-section {
+
+  margin: auto;
+
+  padding: 0 40px 90px;
+
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 25px;
+}
+
+
+.mission-card {
+  padding: 35px;
+
+  background: var(--card);
+
+  border: 1px solid var(--border);
+
+  border-radius: 18px;
+
+  box-shadow: var(--card-shadow);
+}
+
+
+.mission-icon {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: var(--accent);
+
+  color: var(--primary);
+
+  margin-bottom: 22px;
+}
+
+
+.mission-card > span {
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: 1.2px;
+
+  color: var(--primary);
+}
+
+
+.mission-card h3 {
+  margin: 10px 0;
+
+  font-family: "DM Sans", sans-serif;
+
+  font-size: 22px;
+}
+
+
+.mission-card p {
+  margin: 0;
+
+  font-size: 14px;
+
+  line-height: 1.8;
+}
+
+
+/* =========================================
+   WHY SECTION
+========================================= */
+
+.why-section {
+  background: var(--muted);
+
+  padding: 90px 40px;
+}
+
+
+.why-heading {
+
+  margin: auto;
+}
+
+
+.why-heading p {
+  max-width: 500px;
+
+  margin-top: 18px;
+
+  font-size: 15px;
+}
+
+
+.why-grid {
+  max-width: 1180px;
+
+  margin: 40px auto 0;
+
+  display: grid;
+
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 20px;
+}
+
+
+.why-card {
+  background: var(--card);
+
+  padding: 28px;
+
+  border-radius: 16px;
+
+  border: 1px solid var(--border);
+
+  transition: 0.25s ease;
+}
+
+
+.why-card:hover {
+  transform: translateY(-4px);
+
+  box-shadow: var(--card-shadow-hover);
+}
+
+
+.why-icon {
+  width: 46px;
+  height: 46px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: var(--accent);
+
+  color: var(--primary);
+
+  margin-bottom: 20px;
+}
+
+
+.why-card h3 {
+  margin: 0 0 10px;
+
+  font-family: "DM Sans", sans-serif;
+
+  font-size: 17px;
+}
+
+
+.why-card p {
+  margin: 0;
+
+  font-size: 13px;
+
+  line-height: 1.7;
+}
+
+
+/* =========================================
+   HOW IT WORKS
+========================================= */
+
+.how-section {
+
+  margin: auto;
+
+  padding: 90px 40px;
+}
+
+
+.steps-grid {
+  margin-top: 45px;
+
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 25px;
+}
+
+
+.step-card {
+  position: relative;
+
+  padding: 30px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 16px;
+
+  background: var(--card);
+}
+
+
+.step-number {
+  position: absolute;
+
+  top: 22px;
+
+  right: 25px;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  color: var(--muted-foreground);
+}
+
+
+.step-card > svg {
+  color: var(--primary);
+
+  margin-bottom: 18px;
+}
+
+
+.step-card h3 {
+  margin: 0 0 8px;
+
+  font-family: "DM Sans", sans-serif;
+
+  font-size: 19px;
+}
+
+
+.step-card p {
+  margin: 0;
+
+  font-size: 14px;
+
+  line-height: 1.7;
+}
+
+
+/* =========================================
+   CTA
+========================================= */
+
+.about-cta {
+
+  margin: 0 auto 80px;
+
+  padding: 55px 60px;
+
+  border-radius: 20px;
+
+  background: var(--primary);
+
+  color: var(--primary-foreground);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 40px;
+}
+
+
+.about-cta span {
+  color: var(--primary-foreground);
+
+  opacity: 0.8;
+}
+
+
+.about-cta h2 {
+  margin: 10px 0;
+
+  font-size: 34px;
+
+  line-height: 1.2;
+}
+
+
+.about-cta p {
+  margin: 0;
+
+  color: var(--primary-foreground);
+
+  opacity: 0.85;
+
+  font-size: 14px;
+}
+
+
+.about-cta-btn {
+  flex-shrink: 0;
+
+  height: 48px;
+
+  padding: 0 22px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  border: none;
+
+  border-radius: var(--radius);
+
+  background: var(--card);
+
+  color: var(--primary);
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 900px) {
+
+  .about-hero {
+    grid-template-columns: 1fr;
+
+    gap: 40px;
+
+    padding: 60px 25px;
+  }
+
+
+  .about-section {
+    grid-template-columns: 1fr;
+
+    gap: 30px;
+
+    padding: 70px 25px;
+  }
+
+
+  .mission-section {
+    grid-template-columns: 1fr;
+
+    padding: 0 25px 70px;
+  }
+
+
+  .why-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+
+  .steps-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  .about-cta {
+    margin: 0 25px 60px;
+
+    padding: 40px;
+
+    flex-direction: column;
+
+    align-items: flex-start;
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .about-hero h1 {
+    font-size: 42px;
+  }
+
+
+  .about-hero-actions {
+    flex-direction: column;
+  }
+
+
+  .about-primary-btn,
+  .about-secondary-btn {
+    justify-content: center;
+  }
+
+
+  .about-section-heading h2,
+  .why-heading h2,
+  .how-heading h2 {
+    font-size: 30px;
+  }
+
+
+  .why-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  .about-cta h2 {
+    font-size: 28px;
+  }
+
+}
