@@ -1,43 +1,88 @@
+
 const UserData = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
+const normalizeEmail = (email) =>
+  String(email || "").trim().toLowerCase();
+
+const createToken = (user) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is not configured");
+  }
+
+  return jwt.sign(
+    {
+      id: user._id.toString(),
+      role: user.role,
+      hospitalId: user.hospitalId
+        ? user.hospitalId.toString()
+        : null,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
+};
+
+// PUBLIC SIGNUP: patients only.
 exports.signup = async (req, res) => {
   try {
     const { fullname, email, password, confirmPassword } = req.body;
 
-    if (!fullname || !email || !password || !confirmPassword) {
+    if (!fullname?.trim() || !email || !password || !confirmPassword) {
       return res.status(400).json({
-        message: "All fields are required",
+        success: false,
+        message: "All fields are required.",
+      });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid email address.",
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters.",
       });
     }
 
     if (password !== confirmPassword) {
       return res.status(400).json({
-        message: "Password and Confirm Password must be same",
+        success: false,
+        message: "Password and confirm password must match.",
       });
     }
 
-    const existingUser = await UserData.findOne({ email });
+    const existingUser = await UserData.findOne({
+      email: normalizedEmail,
+    });
 
     if (existingUser) {
       return res.status(409).json({
-        message: "Email already registered",
+        success: false,
+        message: "Email already registered.",
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-    const newUser = new UserData({
-      fullname: fullname,
-      email,
+    const newUser = await UserData.create({
+      fullname: fullname.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
+      role: "patient",
+      hospitalId: null,
     });
 
-    await newUser.save();
-
     return res.status(201).json({
-      message: "Account created successfully",
+      success: true,
+      message: "Account created successfully.",
       user: {
         id: newUser._id,
         fullname: newUser.fullname,
@@ -48,33 +93,43 @@ exports.signup = async (req, res) => {
   } catch (error) {
     console.error("Signup error:", error);
 
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already registered.",
+      });
+    }
+
     return res.status(500).json({
-      message: "Failed to create account",
+      success: false,
+      message: "Failed to create account.",
     });
   }
 };
 
-
+// LOGIN
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
-        message: "All fields are required",
+        success: false,
+        message: "Email and password are required.",
       });
     }
 
-    // 1. Find user by email
-    const existingUser = await UserData.findOne({ email });
+    const existingUser = await UserData.findOne({
+      email: normalizeEmail(email),
+    }).select("+password");
 
-    if (!existingUser) {
+    if (!existingUser || !existingUser.isActive) {
       return res.status(401).json({
-        message: "Invalid email or password",
+        success: false,
+        message: "Invalid email or password, or account inactive.",
       });
     }
 
-    // 2. Compare plain password with hashed password
     const isPasswordValid = await bcrypt.compare(
       password,
       existingUser.password
@@ -82,29 +137,50 @@ exports.login = async (req, res) => {
 
     if (!isPasswordValid) {
       return res.status(401).json({
-        message: "Invalid email or password",
+        success: false,
+        message: "Invalid email or password.",
       });
     }
 
-    // 3. Generate JWT token
-    const token = jwt.sign(
-      {id: existingUser._id,role: existingUser.role,},process.env.JWT_SECRET,{ expiresIn: "1d" });
+    // Hospital Admin must have an approved, active hospital.
+    if (existingUser.role === "hospital_admin") {
+      const Hospital = require("../models/Hospital");
 
-    // 4. Send response
+      const hospital = await Hospital.findOne({
+        _id: existingUser.hospitalId,
+        verificationStatus: "Verified",
+        isActive: true,
+        admin: existingUser._id,
+      });
+
+      if (!hospital) {
+        return res.status(403).json({
+          success: false,
+          message: "Your hospital is not approved or active.",
+        });
+      }
+    }
+
+    const token = createToken(existingUser);
+
     return res.status(200).json({
-      message: "Login successful",
+      success: true,
+      message: "Login successful.",
       token,
       user: {
         id: existingUser._id,
+        fullname: existingUser.fullname,
         email: existingUser.email,
         role: existingUser.role,
+        hospitalId: existingUser.hospitalId || null,
       },
     });
   } catch (error) {
     console.error("Login error:", error);
 
     return res.status(500).json({
-      message: "Failed to login account",
+      success: false,
+      message: "Failed to login.",
     });
   }
 };

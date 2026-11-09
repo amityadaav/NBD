@@ -86,6 +86,23 @@ const UserSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    role: {
+  type: String,
+  enum: [
+    "patient",
+    "doctor",
+    "hospital_admin",
+    "super_admin",
+    "admin", // Legacy role: migrate existing admin accounts
+  ],
+  default: "patient",
+},
+
+hospitalId: {
+  type: require("mongoose").Schema.Types.ObjectId,
+  ref: "Hospital",
+  default: null,
+},
   },
   {
     timestamps: true,

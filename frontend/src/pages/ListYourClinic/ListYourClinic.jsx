@@ -161,6 +161,8 @@ const ReviewItem = ({ label, value }) => (
 const ListYourClinic = () => {
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState(createInitialData);
+  const [hospitalLogo, setHospitalLogo] = useState(null);
+  const [hospitalImages, setHospitalImages] = useState([]);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -269,6 +271,14 @@ const ListYourClinic = () => {
       }
     }
 
+    if (step === 0 && formData.establishedYear) {
+      const year = Number(formData.establishedYear);
+      const currentYear = new Date().getFullYear();
+      if (!Number.isInteger(year) || year < 1800 || year > currentYear) {
+        nextErrors.establishedYear = `Enter a year between 1800 and ${currentYear}.`;
+      }
+    }
+
     if (step === 1 && formData.pincode && !/^\d{6}$/.test(formData.pincode)) {
       nextErrors.pincode = "PIN code must contain exactly 6 digits.";
     }
@@ -307,6 +317,13 @@ const ListYourClinic = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    // Pressing Enter on an earlier step should advance, not submit.
+    if (step < steps.length - 1) {
+      nextStep();
+      return;
+    }
+
     if (!validateStep()) return;
 
     setLoading(true);
@@ -376,13 +393,19 @@ const ListYourClinic = () => {
         })),
     };
 
-    // Files are selected in the UI but require a separate multipart upload endpoint.
-    // Do not send File objects as JSON; upload documents after storage middleware is configured.
+    // Send hospital fields and files together as multipart/form-data.
+    const uploadData = new FormData();
+    uploadData.append("hospitalData", JSON.stringify(hospitalData));
+    if (hospitalLogo) uploadData.append("logo", hospitalLogo);
+    hospitalImages.forEach((file) => uploadData.append("images", file));
+    Object.entries(formData.documents).forEach(([key, file]) => {
+      if (file) uploadData.append(key, file);
+    });
+
     try {
       const response = await axios.post(
         `${API_BASE_URL}/hospitals/register`,
-        hospitalData,
-        { headers: { "Content-Type": "application/json" } }
+        uploadData
       );
 
       setApiSuccess(response.data?.message || "Hospital registered successfully.");
@@ -427,6 +450,8 @@ const ListYourClinic = () => {
 
   const resetForm = () => {
     setFormData(createInitialData());
+    setHospitalLogo(null);
+    setHospitalImages([]);
     setStep(0);
     setErrors({});
     setSubmitted(false);
@@ -617,6 +642,33 @@ const ListYourClinic = () => {
                       <Field label="Primary Mobile Number" name="phone" icon={Phone} type="tel" placeholder="10-digit mobile number" maxLength={10} required value={formData.phone} onChange={handleChange} error={errors.phone} />
                       <Field label="Alternate Contact Number" name="alternatePhone" icon={Phone} type="tel" placeholder="Optional" maxLength={10} value={formData.alternatePhone} onChange={handleChange} error={errors.alternatePhone} />
                     </div>
+                    <div className="lh-form-grid lh-spaced-heading">
+                      <label className="lh-upload-box">
+                        <span className="lh-upload-icon"><Upload size={21} /></span>
+                        <strong>Hospital Logo</strong>
+                        <small>JPG, PNG or WEBP · max 5 MB</small>
+                        <span className="lh-upload-action">{hospitalLogo?.name || "Choose logo"}</span>
+                        <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (!file.type.startsWith("image/")) { setApiError("Please select an image file for the hospital logo."); e.target.value = ""; return; }
+                          if (file.size > 5 * 1024 * 1024) { setApiError("Hospital logo must be 5 MB or less."); e.target.value = ""; return; }
+                          setApiError(""); setHospitalLogo(file);
+                        }} />
+                      </label>
+                      <label className="lh-upload-box">
+                        <span className="lh-upload-icon"><Upload size={21} /></span>
+                        <strong>Hospital Photos</strong>
+                        <small>JPG, PNG or WEBP · up to 5 photos, 5 MB each</small>
+                        <span className="lh-upload-action">{hospitalImages.length ? `${hospitalImages.length} photo(s) selected` : "Choose photos"}</span>
+                        <input type="file" multiple accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (files.length > 5) { setApiError("You can upload a maximum of 5 hospital photos."); e.target.value = ""; return; }
+                          if (files.some((file) => !file.type.startsWith("image/") || file.size > 5 * 1024 * 1024)) { setApiError("Each hospital photo must be a JPG, PNG or WEBP image of 5 MB or less."); e.target.value = ""; return; }
+                          setApiError(""); setHospitalImages(files);
+                        }} />
+                      </label>
+                    </div>
                   </>
                 )}
 
@@ -700,7 +752,6 @@ const ListYourClinic = () => {
                           <span className="lh-doctor-number">Doctor {index + 1}</span>
                           {formData.doctors.length > 1 && <button type="button" className="lh-remove-btn" onClick={() => removeDoctor(index)}><Trash2 size={16} /> Remove</button>}
                         </div>
-                        {errors[`doctor-${index}`] && <p className="lh-error">{errors[`doctor-${index}`]}</p>}
                         <div className="lh-form-grid">
                           <Field label="Doctor's Full Name" name={`doctor-name-${index}`} icon={Users} placeholder="Doctor's name" required={index === 0} value={doctor.name} onChange={(e) => updateDoctor(index, "name", e.target.value)} error={errors[`doctor-${index}`]} />
                           <Field label="Qualification" name={`doctor-qualification-${index}`} icon={FileCheck} placeholder="e.g. MBBS, MD" value={doctor.qualification} onChange={(e) => updateDoctor(index, "qualification", e.target.value)} />
@@ -725,7 +776,7 @@ const ListYourClinic = () => {
                       <span className="lh-title-icon"><FileCheck size={23} /></span>
                       <div><h3>Documents & Verification</h3><p>Provide relevant documents required for your facility and jurisdiction.</p></div>
                     </div>
-                    <div className="lh-info-box"><ShieldCheck size={22} /><p><strong>Secure document handling</strong> Uploads are not sent to a server in this frontend demo. Production uploads should use authenticated APIs and private file storage.</p></div>
+                    <div className="lh-info-box"><ShieldCheck size={22} /><p><strong>Secure document handling</strong> Files are uploaded with your registration. Only upload documents you are authorized to share.</p></div>
                     <div className="lh-upload-grid">
                       {documentOptions.map(([key, label, hint]) => (
                         <label className="lh-upload-box" key={key}>
@@ -796,7 +847,7 @@ const ListYourClinic = () => {
                         Object.entries(formData.documents).filter(([, file]) => file).map(([key, file]) => <ReviewItem key={key} label={documentOptions.find(([docKey]) => docKey === key)?.[1] || key} value={file.name} />)
                       ) : <p className="lh-review-address">No documents selected.</p>}
                     </div>
-                    <div className="lh-info-box"><ShieldCheck size={22} /><p>Your registration will be sent to the hospital API. Documents selected above are not uploaded yet; configure authenticated file storage to submit them securely.</p></div>
+                    <div className="lh-info-box"><ShieldCheck size={22} /><p>Your hospital details and selected files will be submitted together for verification.</p></div>
                   </>
                 )}
               </motion.div>

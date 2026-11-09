@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import "./BloodDonation.css";
+import { Link } from "react-router-dom";
 
 const initialDonors = [
   {
@@ -142,13 +143,10 @@ function BloodDonation() {
           </p>
 
           <div className="bd-hero-actions">
-            <button
-              className="bd-primary-btn"
-              onClick={() => setShowForm(true)}
-            >
-              <Heart size={18} />
+          <Link to="/become-donor" className="bd-primary-btn">
+            <Heart size={18} />
               Become a Donor
-            </button>
+          </Link>
 
             <a href="#bd-find-donors" className="bd-secondary-btn">
               Find Blood Donors
@@ -222,13 +220,10 @@ function BloodDonation() {
             <h2>Find Blood Donors</h2>
           </div>
 
-          <button
-            className="bd-register-btn"
-            onClick={() => setShowForm(true)}
-          >
-            <Plus size={18} />
+        <Link to="/become-donor" className="bd-register-btn">
+          <Plus size={18} />
             Register as Donor
-          </button>
+        </Link>
         </div>
 
         <div className="bd-filters">
@@ -236,7 +231,7 @@ function BloodDonation() {
             <Search size={19} />
             <input
               type="search"
-              placeholder="Search by name or location..."
+              placeholder="Search donor name or area..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -259,7 +254,7 @@ function BloodDonation() {
         </div>
 
         <div className="bd-results-heading">
-          <h3>Available Donor Listings</h3>
+          <h3>Donors in your community</h3>
           <span>{filteredDonors.length} listed</span>
         </div>
 
@@ -357,7 +352,7 @@ function BloodDonation() {
 
             <h2 id="bd-form-title">Become a Blood Donor</h2>
             <p>
-              Enter your details to add a sample listing to this demo.
+              Join the community and help connect people with voluntary blood donors.
             </p>
 
             <form className="bd-form" onSubmit={handleRegister}>
@@ -413,8 +408,7 @@ function BloodDonation() {
               </button>
 
               <small>
-                This demo stores registrations only in page state.
-                It does not save data to a database.
+                Demo mode: your registration is stored only until this page is refreshed. Connect the backend to save it permanently.
               </small>
             </form>
           </div>

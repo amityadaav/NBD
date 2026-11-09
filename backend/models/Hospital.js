@@ -233,6 +233,18 @@ const hospitalSchema = new mongoose.Schema(
       default: false,
     },
 
+reviewedBy: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  default: null,
+},
+
+reviewedAt: {
+  type: Date,
+  default: null,
+},
+
+
     // Link to the registered hospital administrator
     admin: {
       type: mongoose.Schema.Types.ObjectId,

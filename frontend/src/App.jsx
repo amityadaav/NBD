@@ -13,6 +13,7 @@ import "./App.css";
 import Signup from "./pages/Signup/Signup";
 import BloodDonation from "./pages/BloodDonation/BloodDonation";
 import ListYourClinic from "./pages/ListYourClinic/ListYourClinic";
+import BecomeDonor from "./pages/BecomeDonor/BecomeDonor";
 
 const App = () => {
   return (
@@ -20,15 +21,15 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route
-          path="/appointments"
+          path="/book-appointment"
           element={<BookAppointment />}
         />
-        <Route path="/doctors" element={<FindDoctors />} />
+        <Route path="/find-doctors" element={<FindDoctors />} />
         <Route path="/specialties" element={<Specialties />} />
         <Route path="/hospitals" element={<Hospitals />} />
         <Route path="/about" element={<About />} />
-        <Route path="/bloodDonation" element={<BloodDonation/>} />
-
+        <Route path="/blood-donation" element={<BloodDonation/>} />
+        <Route path="/become-donor" element={<BecomeDonor />} />
         <Route path="/list-your-clinic" element={<ListYourClinic/>}/>
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />

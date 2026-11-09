@@ -6,12 +6,12 @@ import Button from "../../common/Button/Button";
 import "./Navbar.css";
 
 export const NAV = [
-  ["/doctors", "Find Doctors"],
+  ["/find-doctors", "Find Doctors"],
   ["/specialties", "Specialties"],
   ["/hospitals", "Hospitals"],
-  ["/appointments", "Appointments"],
+  ["/book-appointment", "Appointments"],
   ["/list-your-clinic", "List Your Hospitals"],
-  ["/bloodDonation", "Blood Donation"],
+  ["/blood-donation", "Blood Donation"],
   ["/about", "About"],
 ];
 
@@ -106,7 +106,7 @@ export default function Navbar() {
           </NavLink>
 
           <Link
-            to="/doctors"
+            to="/find-doctors"
             className="full"
             onClick={closeMenu}
           >

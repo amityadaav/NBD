@@ -1,5 +1,6 @@
 
 import React, { useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   CalendarDays,
   Clock3,
@@ -18,14 +19,7 @@ import {
 
 import "./BookAppointment.css";
 
-const doctor = {
-  name: "Dr. Sarah Johnson",
-  specialty: "Cardiologist",
-  qualification: "MBBS, MD - Cardiology",
-  hospital: "City Care Hospital",
-  address: "MG Road, Bengaluru",
-  fee: 500,
-};
+const API_URL = "http://localhost:5000/api";
 
 const timeSlots = [
   "09:00 AM",
@@ -39,15 +33,58 @@ const timeSlots = [
 ];
 
 function BookAppointment() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Doctor and hospital data received from FindDoctors.jsx
+  const selectedDoctor = location.state?.doctor;
+
+  const doctorId =
+    location.state?.doctorId || selectedDoctor?._id;
+
+  const hospitalId =
+    location.state?.hospitalId ||
+    (typeof selectedDoctor?.hospitalId === "object"
+      ? selectedDoctor?.hospitalId?._id
+      : selectedDoctor?.hospitalId);
+
+  const hospitalData =
+    typeof selectedDoctor?.hospitalId === "object"
+      ? selectedDoctor.hospitalId
+      : {};
+
+  const doctor = {
+    name: selectedDoctor?.name || "",
+    specialty: selectedDoctor?.specialty || "",
+    qualification: selectedDoctor?.qualification || "",
+    hospital: hospitalData?.hospitalName || "",
+    address:
+      typeof hospitalData?.address === "string"
+        ? hospitalData.address
+        : [
+            hospitalData?.address?.street,
+            hospitalData?.address?.city,
+          ]
+            .filter(Boolean)
+            .join(", "),
+    fee: Number(selectedDoctor?.consultationFee ?? 0),
+    image: selectedDoctor?.profileImage || "",
+  };
+
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
-  const [appointmentType, setAppointmentType] = useState("In-Clinic");
+  const [appointmentType, setAppointmentType] =
+    useState("In-Clinic");
   const [currentWeek, setCurrentWeek] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [patientName, setPatientName] = useState("");
   const [patientEmail, setPatientEmail] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [bookingError, setBookingError] = useState("");
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [bookingId, setBookingId] = useState("");
 
   const dates = useMemo(() => {
     const today = new Date();
@@ -56,6 +93,8 @@ function BookAppointment() {
 
     const start = new Date(today);
     const day = start.getDay();
+
+    // Start the calendar on Monday.
     start.setDate(start.getDate() + (day === 0 ? 1 : 1 - day));
 
     return Array.from({ length: 7 }, (_, index) => {
@@ -94,30 +133,106 @@ function BookAppointment() {
     );
   }, [selectedDate]);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setBookingError("");
+
+    if (!doctorId || !hospitalId) {
+      setBookingError(
+        "Doctor or hospital information is missing. Please select a doctor from the Find Doctors page."
+      );
+      return;
+    }
 
     if (!selectedDate || !selectedTime) {
-      alert("Please select an appointment date and time.");
+      setBookingError("Please select an appointment date and time.");
       return;
     }
 
-    if (!patientName.trim() || !patientEmail.trim() || !patientPhone.trim()) {
-      alert("Please enter your name, email, and phone number.");
+    if (
+      !patientName.trim() ||
+      !patientEmail.trim() ||
+      !patientPhone.trim()
+    ) {
+      setBookingError(
+        "Please fill in your name, email, and phone number."
+      );
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(patientEmail)) {
-      alert("Please enter a valid email address.");
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(patientEmail.trim())
+    ) {
+      setBookingError("Please enter a valid email address.");
       return;
     }
 
     if (!/^[0-9]{10}$/.test(patientPhone)) {
-      alert("Please enter a valid 10-digit phone number.");
+      setBookingError("Please enter a valid 10-digit phone number.");
       return;
     }
 
-    setShowConfirmation(true);
+    if (!Number.isFinite(doctor.fee) || doctor.fee < 0) {
+      setBookingError("The doctor's consultation fee is invalid.");
+      return;
+    }
+
+    const appointmentData = {
+      patientName: patientName.trim(),
+      patientEmail: patientEmail.trim(),
+      patientPhone,
+      doctorId,
+      hospitalId,
+      appointmentDate: selectedDate,
+      appointmentTime: selectedTime,
+      appointmentType,
+      reason: reason.trim(),
+      consultationFee: doctor.fee,
+    };
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        `${API_URL}/appointments/book`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(appointmentData),
+        }
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const missing = result.missingFields?.length
+          ? ` Missing fields: ${result.missingFields.join(", ")}`
+          : "";
+
+        throw new Error(
+          (result.message || "Failed to book appointment.") + missing
+        );
+      }
+
+      setBookingId(
+        result.appointment?._id ||
+          result.booking?._id ||
+          result._id ||
+          ""
+      );
+      setBookingSuccess(true);
+      setShowConfirmation(true);
+    } catch (error) {
+      console.error("Booking error:", error);
+      setBookingError(
+        error.message ||
+          "Unable to connect to the server. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const changeWeek = (direction) => {
@@ -126,7 +241,42 @@ function BookAppointment() {
     if (nextWeek < 0 || nextWeek > 8) return;
 
     setCurrentWeek(nextWeek);
+    setSelectedDate("");
+    setSelectedTime("");
   };
+
+  // If the user opens this page without selecting a doctor,
+  // ask them to choose a doctor first.
+  if (!selectedDoctor || !doctorId || !hospitalId) {
+    return (
+      <main className="book-appointment">
+        <section className="booking-card">
+          <div className="section-title">
+            <div className="section-icon">
+              <Stethoscope size={20} />
+            </div>
+
+            <div>
+              <h3>Select a doctor first</h3>
+              <p>
+                Choose a doctor from the Find Doctors page before
+                booking an appointment.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="confirm-appointment"
+            onClick={() => navigate("/find-doctors")}
+          >
+            Find Doctors
+            <ArrowRight size={18} />
+          </button>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="book-appointment">
@@ -153,7 +303,11 @@ function BookAppointment() {
           {/* Doctor information */}
           <article className="doctor-booking-card">
             <div className="doctor-booking-image">
-              <UserRound size={42} />
+              {doctor.image ? (
+                <img src={doctor.image} alt={doctor.name} />
+              ) : (
+                <UserRound size={42} />
+              )}
             </div>
 
             <div className="doctor-booking-info">
@@ -167,7 +321,10 @@ function BookAppointment() {
 
               <div className="doctor-location">
                 <MapPin size={15} />
-                <span>{doctor.hospital}, {doctor.address}</span>
+                <span>
+                  {doctor.hospital}
+                  {doctor.address ? `, ${doctor.address}` : ""}
+                </span>
               </div>
 
               <div className="doctor-verified">
@@ -335,7 +492,9 @@ function BookAppointment() {
 
                 <div>
                   <h3>Your details</h3>
-                  <p>Enter your contact information for the booking.</p>
+                  <p>
+                    Enter your contact information for the booking.
+                  </p>
                 </div>
               </div>
 
@@ -347,6 +506,7 @@ function BookAppointment() {
                     value={patientName}
                     onChange={(e) => setPatientName(e.target.value)}
                     placeholder="Enter your full name"
+                    autoComplete="name"
                     required
                   />
                 </label>
@@ -358,6 +518,7 @@ function BookAppointment() {
                     value={patientEmail}
                     onChange={(e) => setPatientEmail(e.target.value)}
                     placeholder="you@example.com"
+                    autoComplete="email"
                     required
                   />
                 </label>
@@ -371,9 +532,12 @@ function BookAppointment() {
                     pattern="[0-9]{10}"
                     value={patientPhone}
                     onChange={(e) =>
-                      setPatientPhone(e.target.value.replace(/\D/g, ""))
+                      setPatientPhone(
+                        e.target.value.replace(/\D/g, "")
+                      )
                     }
                     placeholder="10-digit mobile number"
+                    autoComplete="tel"
                     required
                   />
                 </label>
@@ -390,10 +554,20 @@ function BookAppointment() {
               </div>
             </section>
 
-            <button type="submit" className="confirm-appointment">
+            {bookingError && (
+              <p role="alert" className="booking-error">
+                {bookingError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="confirm-appointment"
+              disabled={loading}
+            >
               <CheckCircle2 size={19} />
-              Confirm appointment
-              <ArrowRight size={18} />
+              {loading ? "Booking appointment..." : "Confirm appointment"}
+              {!loading && <ArrowRight size={18} />}
             </button>
 
             <p className="booking-privacy">
@@ -443,6 +617,7 @@ function BookAppointment() {
             ) : (
               <Building2 size={17} />
             )}
+
             <div>
               <span>Consultation type</span>
               <strong>{appointmentType}</strong>
@@ -453,8 +628,8 @@ function BookAppointment() {
             <MapPin size={17} />
             <div>
               <span>Hospital</span>
-              <strong>{doctor.hospital}</strong>
-              <small>{doctor.address}</small>
+              <strong>{doctor.hospital || "Hospital details unavailable"}</strong>
+              {doctor.address && <small>{doctor.address}</small>}
             </div>
           </div>
 
@@ -473,7 +648,8 @@ function BookAppointment() {
         </aside>
       </div>
 
-      {showConfirmation && (
+      {/* Confirmation modal: shown only after successful API response */}
+      {showConfirmation && bookingSuccess && (
         <div
           className="booking-modal-overlay"
           role="presentation"
@@ -490,29 +666,63 @@ function BookAppointment() {
               <CheckCircle2 size={34} />
             </div>
 
-            <h2 id="booking-confirm-title">Review your appointment</h2>
+            <h2 id="booking-confirm-title">
+              Appointment booked successfully!
+            </h2>
 
             <p>
-              Your details are ready. This is a preview only; no appointment
-              has been saved to the server yet.
+              Your appointment request has been saved successfully.
             </p>
 
             <div className="confirmation-details">
-              <p><strong>Patient:</strong> {patientName}</p>
-              <p><strong>Doctor:</strong> {doctor.name}</p>
-              <p><strong>Date:</strong> {selectedDateLabel}</p>
-              <p><strong>Time:</strong> {selectedTime}</p>
-              <p><strong>Type:</strong> {appointmentType}</p>
-              <p><strong>Fee:</strong> ₹{doctor.fee}</p>
-              {reason && <p><strong>Reason:</strong> {reason}</p>}
+              {bookingId && (
+                <p>
+                  <strong>Booking ID:</strong> {bookingId}
+                </p>
+              )}
+
+              <p>
+                <strong>Patient:</strong> {patientName}
+              </p>
+
+              <p>
+                <strong>Doctor:</strong> {doctor.name}
+              </p>
+
+              <p>
+                <strong>Hospital:</strong> {doctor.hospital}
+              </p>
+
+              <p>
+                <strong>Date:</strong> {selectedDateLabel}
+              </p>
+
+              <p>
+                <strong>Time:</strong> {selectedTime}
+              </p>
+
+              <p>
+                <strong>Type:</strong> {appointmentType}
+              </p>
+
+              <p>
+                <strong>Fee:</strong> ₹{doctor.fee}
+              </p>
+
+              {reason && (
+                <p>
+                  <strong>Reason:</strong> {reason}
+                </p>
+              )}
             </div>
 
             <button
               type="button"
               className="confirm-appointment"
-              onClick={() => setShowConfirmation(false)}
+              onClick={() => navigate("/")}
             >
-              Back to booking
+              Back to Home
+              <ArrowRight size={18} />
             </button>
           </section>
         </div>
