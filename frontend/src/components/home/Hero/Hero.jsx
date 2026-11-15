@@ -1,4 +1,5 @@
-import { ArrowRight, ArrowUpRight, Play, Stethoscope, HeartPulse, UserRound } from "lucide-react";
+
+import { ArrowRight, ArrowUpRight, Play, Stethoscope, HeartPulse } from "lucide-react";
 import "./Hero.css";
 import heroImage from "../../../assets/images/HealthcareTeams.png";
 
@@ -21,18 +22,18 @@ const Hero = () => {
 
         {/* LEFT */}
         <div className="sm-left">
-<h1 className="sm-title">
-  Your Trusted
-  <span className="sm-title__line">
-    Healthcare<span className="sm-orb" aria-hidden="true" />Partner.
-  </span>
-</h1>
+          <h1 className="sm-title">
+            Your Trusted
+            <span className="sm-title__line">
+              Healthcare<span className="sm-orb" aria-hidden="true" />Partner.
+            </span>
+          </h1>
 
-<p className="sm-tagline">
-  Find trusted doctors near you, explore verified specialists,
-  and book appointments effortlessly. Your health deserves
-  the right care.
-</p>
+          <p className="sm-tagline">
+            Find trusted doctors near you, explore verified specialists,
+            and book appointments effortlessly. Your health deserves
+            the right care.
+          </p>
 
           <div className="sm-actions">
             {actions.map(({ href, label, Icon, variant }) => (
@@ -72,7 +73,7 @@ const Hero = () => {
         </div>
 
         {/* CENTER */}
-        <img src={heroImage} alt="Our doctors" className="sm-person" />
+        <img src={heroImage} alt="Healthcare team" className="sm-person" />
 
         <span className="sm-chip sm-chip--1">Reliable</span>
         <span className="sm-chip sm-chip--2">Experienced</span>
@@ -89,9 +90,7 @@ const Hero = () => {
           </div>
 
           <div className="sm-right__bottom">
-            <p className="sm-feedback">
-              Every review helps us improve.
-            </p>
+            <p className="sm-feedback">Every review helps us improve.</p>
             <div className="sm-right__row">
               <div className="sm-avatars" aria-hidden="true">
                 <span>A</span>

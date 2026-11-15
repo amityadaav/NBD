@@ -8,7 +8,7 @@
 }
 
 .how-container {
-  max-width: 1120px;
+  max-width: 1280px;
   margin: 0 auto;
 }
 
@@ -198,14 +198,16 @@
   gap: 25px;
   margin-top: 42px;
   padding: 20px 24px;
-  background: var(--card);
+  background:
+    radial-gradient(circle at 90% 0%, rgba(255, 255, 255, 0.18), transparent 55%),
+    linear-gradient(135deg, #0f766e 0%, #115e59 100%);
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: var(--card-shadow);
 }
 .how-bottom div { display: flex; flex-direction: column; }
-.how-bottom strong { font-family: "DM Sans", sans-serif; font-size: 14px; color: var(--foreground); }
-.how-bottom span { margin-top: 2px; font-family: "DM Sans", sans-serif; font-size: 12px; color: var(--muted-foreground); }
+.how-bottom strong { font-family: "DM Sans", sans-serif; font-size: 14px; color: #fff; }
+.how-bottom span { margin-top: 2px; font-family: "DM Sans", sans-serif; font-size: 12px; color: #fff; }
 .how-bottom button {
   display: flex;
   align-items: center;
@@ -214,8 +216,8 @@
   padding: 0 17px;
   border: none;
   border-radius: 8px;
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: #fff;
+  color: #115e59;
   font-family: "DM Sans", sans-serif;
   font-size: 12px;
   font-weight: 600;

@@ -49,6 +49,7 @@ const WhyChooseUs = () => {
           transition={{ duration: 0.6 }}
         >
           <div className="why-heading">
+            <span className="why-label">WHY US</span>
             <h2>
               Healthcare made{" "}
               <span>simple and trusted.</span>
@@ -82,43 +83,29 @@ const WhyChooseUs = () => {
                   transition: { duration: 0.25 },
                 }}
               >
-                {/* Card number */}
                 <span className="why-number">
                   0{index + 1}
                 </span>
 
-                {/* Icon */}
                 <motion.div
                   className="why-icon"
-                  whileHover={{
-                    scale: 1.1,
-                    rotate: -5,
-                  }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 300,
-                  }}
+                  whileHover={{ scale: 1.1, rotate: -5 }}
+                  transition={{ type: "spring", stiffness: 300 }}
                 >
                   <Icon size={24} strokeWidth={1.9} />
                 </motion.div>
 
-                {/* Content */}
                 <div className="why-content">
                   <h3>{feature.title}</h3>
-
                   <p>{feature.description}</p>
                 </div>
 
-                {/* Bottom arrow */}
                 <div className="why-card-footer">
                   <span>Learn more</span>
 
                   <motion.div
                     className="why-arrow"
-                    whileHover={{
-                      x: 4,
-                      y: -4,
-                    }}
+                    whileHover={{ x: 4, y: -4 }}
                   >
                     <ArrowUpRight size={17} />
                   </motion.div>

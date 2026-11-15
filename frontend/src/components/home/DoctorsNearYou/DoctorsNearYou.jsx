@@ -1,13 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  MapPin, Search, ChevronDown, Star, Clock, 
+import {
+  MapPin, Search, ChevronDown, Star, Clock,
   Stethoscope, Building2, ArrowRight, X, ChevronLeft, ChevronRight
 } from "lucide-react";
 import "./DoctorsNearYou.css";
 
 const API_URL = "http://localhost:5000/api/doctors";
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 8;
+
+// Stable pseudo-rating derived from the doctor id (so it doesn't flicker)
+const seededRating = (id) => {
+  if (!id) return { rating: "4.5", reviews: 50 };
+  let h = 0;
+  for (let i = 0; i < id.length; i++) {
+    h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  }
+  const seed = h / 0xffffffff;
+  return {
+    rating: (4 + seed).toFixed(1),
+    reviews: Math.floor(seed * 180) + 20,
+  };
+};
 
 const DoctorsNearYou = () => {
   const [doctors, setDoctors] = useState([]);
@@ -18,7 +32,6 @@ const DoctorsNearYou = () => {
 
   const navigate = useNavigate();
 
-  // Fetch doctors from backend
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
@@ -43,7 +56,6 @@ const DoctorsNearYou = () => {
     fetchDoctors();
   }, []);
 
-  // Search filter
   const filteredDoctors = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return doctors;
@@ -57,12 +69,10 @@ const DoctorsNearYou = () => {
     });
   }, [doctors, search]);
 
-  // Reset page when search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [search]);
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredDoctors.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedDoctors = filteredDoctors.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -72,7 +82,6 @@ const DoctorsNearYou = () => {
     document.querySelector(".near-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // Generate page numbers with ellipsis
   const getPageNumbers = () => {
     const pages = [];
     if (totalPages <= 5) {
@@ -91,6 +100,13 @@ const DoctorsNearYou = () => {
     pages.push(totalPages);
 
     return pages;
+  };
+
+  /* ✅ NEW: navigate to the profile page, passing the doctor for instant render */
+  const handleViewProfile = (doctor) => {
+    navigate(`/doctors/${doctor._id}`, {
+      state: { doctor },
+    });
   };
 
   const handleBookAppointment = (doctor) => {
@@ -121,7 +137,7 @@ const DoctorsNearYou = () => {
         {/* Header */}
         <div className="section-headers">
           <div>
-            <span className="section-label">Featured Doctors</span>
+            <span className="section-label">Top Rated</span>
             <h2>Doctors Near You</h2>
           </div>
 
@@ -155,8 +171,8 @@ const DoctorsNearYou = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
             {search && (
-              <button 
-                className="search-clear" 
+              <button
+                className="search-clear"
                 onClick={() => setSearch("")}
                 aria-label="Clear search"
               >
@@ -199,11 +215,25 @@ const DoctorsNearYou = () => {
                   typeof doctor.hospitalId === "object" ? doctor.hospitalId : null;
 
                 const availableToday = doctor.availableDays?.includes(today);
-                const rating = (4 + Math.random() * 1).toFixed(1);
-                const reviews = Math.floor(Math.random() * 200) + 20;
+                const { rating, reviews } = seededRating(doctor._id);
 
                 return (
-                  <div className="doctor-card" key={doctor._id}>
+                  /* ✅ card is now clickable → opens profile */
+                  <div
+                    className="doctor-card"
+                    key={doctor._id}
+                    onClick={() => handleViewProfile(doctor)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleViewProfile(doctor);
+                      }
+                    }}
+                    style={{ cursor: "pointer" }}
+                    aria-label={`View profile of ${doctor.name}`}
+                  >
                     {/* Image Area */}
                     <div className="doctor-image">
                       <img
@@ -249,9 +279,13 @@ const DoctorsNearYou = () => {
                         <div className="fee">
                           <strong>₹{doctor.consultationFee}</strong>
                         </div>
+                        {/* ✅ stopPropagation so clicking Book does NOT also open profile */}
                         <button
                           className="book-btn"
-                          onClick={() => handleBookAppointment(doctor)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleBookAppointment(doctor);
+                          }}
                         >
                           Book Now
                         </button>

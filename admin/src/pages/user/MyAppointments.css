@@ -1,0 +1,386 @@
+/* ============================================================
+   My Appointments — matches UserDashboard theme
+   ============================================================ */
+
+.ma-page {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 1.5rem 0;
+  color: var(--foreground, #0f172a);
+  background: var(--background, #f8fafc);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  animation: ud-fade-in 0.3s ease;
+}
+
+.ma-page * { box-sizing: border-box; }
+
+@keyframes ud-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Header ---------- */
+.ma-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.ma-header h1 {
+  margin: 0 0 4px;
+  color: var(--foreground, #0f172a);
+  font-size: clamp(22px, 2.5vw, 28px);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.ma-header p {
+  margin: 0;
+  color: var(--muted-foreground, #64748b);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* Primary button — matches .ud-outline-btn feel but filled */
+.ma-book-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--primary, #0f766e);
+  border-radius: 10px;
+  background: var(--primary, #0f766e);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 12px -4px rgba(15, 118, 110, 0.35);
+}
+
+.ma-book-btn:hover {
+  background: #115e59;
+  border-color: #115e59;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -4px rgba(15, 118, 110, 0.45);
+}
+
+/* Secondary variant used in empty state (matches .ud-outline-btn) */
+.ma-book-btn--outline {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--primary, #0f766e);
+  box-shadow: none;
+}
+
+.ma-book-btn--outline:hover {
+  background: #fff;
+  box-shadow: 0 4px 12px -4px rgba(15, 118, 110, 0.3);
+}
+
+/* ---------- Tabs ---------- */
+.ma-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.ma-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted-foreground, #64748b);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ma-tab:hover {
+  background: #f1f5f9;
+  color: var(--foreground, #0f172a);
+}
+
+/* Active tab — uses teal primary from dashboard */
+.ma-tab.active {
+  background: var(--primary, #0f766e);
+  color: #fff;
+  border-color: var(--primary, #0f766e);
+  box-shadow: 0 4px 12px -4px rgba(15, 118, 110, 0.4);
+}
+
+.ma-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.ma-tab:not(.active) .ma-tab-count {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* ---------- States ---------- */
+.ma-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 16px;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: var(--radius, 14px);
+  background: var(--card, #fff);
+  box-shadow: var(--card-shadow, 0 2px 8px rgba(15, 23, 42, 0.03));
+  color: var(--muted-foreground, #64748b);
+  text-align: center;
+}
+
+.ma-state svg { opacity: 0.5; margin-bottom: 8px; }
+
+.ma-state h3 {
+  margin: 4px 0 4px;
+  color: var(--foreground, #0f172a);
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.ma-state p {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ma-state.ma-error {
+  background: hsl(0 86% 97%);
+  border-color: hsl(0 86% 90%);
+  color: hsl(0 74% 42%);
+}
+
+.ma-state.ma-error h3 { color: hsl(0 74% 42%); }
+
+/* ---------- Cards ---------- */
+.ma-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ma-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: var(--radius, 14px);
+  background: var(--card, #fff);
+  box-shadow: var(--card-shadow, 0 2px 8px rgba(15, 23, 42, 0.03));
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.ma-card:hover {
+  box-shadow: var(--card-shadow-hover, 0 6px 16px rgba(15, 23, 42, 0.08));
+  transform: translateY(-1px);
+  border-color: hsl(168 45% 86%);
+}
+
+.ma-card-main {
+  display: flex;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Avatar — matches .ud-doctor-avatar teal gradient */
+.ma-doctor-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, hsl(168 45% 94%), hsl(168 45% 86%));
+  color: var(--primary, #0f766e);
+  border: 1px solid hsl(168 45% 82%);
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+}
+
+.ma-doctor-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ma-doctor-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ma-doctor-info h3 {
+  margin: 0 0 3px;
+  color: var(--foreground, #0f172a);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+/* Specialty — uses teal primary */
+.ma-specialty {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--primary, #0f766e);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ma-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 10px;
+}
+
+.ma-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted-foreground, #64748b);
+  font-size: 12px;
+}
+
+.ma-meta svg {
+  opacity: 0.7;
+}
+
+.ma-reason {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 10px 0 0;
+  color: var(--muted-foreground, #475569);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ma-reason svg { opacity: 0.7; flex-shrink: 0; }
+
+.ma-card-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ---------- Status Pills — match .ud-confirmed/.ud-pending ---------- */
+.ma-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Pending = amber (matches .ud-pending) */
+.ma-status-pending {
+  border-color: hsl(38 92% 82%);
+  background: hsl(38 92% 96%);
+  color: hsl(28 80% 38%);
+}
+
+/* Confirmed = teal (matches .ud-confirmed tone but primary-hued) */
+.ma-status-confirmed {
+  border-color: hsl(168 45% 82%);
+  background: hsl(168 45% 96%);
+  color: var(--primary, #0f766e);
+}
+
+/* Completed = green */
+.ma-status-completed {
+  border-color: hsl(150 55% 82%);
+  background: hsl(150 55% 96%);
+  color: hsl(152 55% 30%);
+}
+
+/* Cancelled = red */
+.ma-status-cancelled {
+  border-color: hsl(0 86% 90%);
+  background: hsl(0 86% 97%);
+  color: hsl(0 74% 42%);
+}
+
+.ma-type {
+  color: var(--muted-foreground, #64748b);
+  font-size: 11.5px;
+}
+
+.ma-fee {
+  color: var(--foreground, #0f172a);
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Spinner ---------- */
+.spin {
+  animation: spin 1s linear infinite;
+  color: var(--primary, #0f766e);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 640px) {
+  .ma-page { padding: 1rem 0; }
+
+  .ma-header { flex-direction: column; align-items: flex-start; }
+
+  .ma-book-btn { width: 100%; justify-content: center; }
+
+  .ma-card {
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .ma-card-side {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding-top: 12px;
+    margin-top: 6px;
+    border-top: 1px solid var(--border, #f1f5f9);
+  }
+}

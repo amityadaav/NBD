@@ -1,11 +1,12 @@
-import React from 'react'
+import React from 'react';
 
-function MyProfile() {
+const MyProfile = () => {
   return (
-    <div>
-      
+    <div style={{ padding: '2rem' }}>
+      <h1>My Profile</h1>
+      <p>View and edit your personal information.</p>
     </div>
-  )
-}
+  );
+};
 
-export default MyProfile
+export default MyProfile;

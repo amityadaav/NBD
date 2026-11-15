@@ -33,7 +33,6 @@ exports.getPatients = async (req, res) => {
       User.countDocuments({ role: "patient", isActive: true }),
     ]);
 
-    // Appointments store patientEmail (no patient ID), so count by email
     const emails = patients.map((p) => (p.email || "").toLowerCase());
     const counts = await Appointment.aggregate([
       { $match: { patientEmail: { $in: emails } } },
@@ -48,11 +47,18 @@ exports.getPatients = async (req, res) => {
       success: true,
       patients,
       statistics: { total: all, active, inactive: all - active },
-      pagination: { total, page: pageNumber, limit: pageSize, totalPages: Math.ceil(total / pageSize) },
+      pagination: {
+        total,
+        page: pageNumber,
+        limit: pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      },
     });
   } catch (error) {
     console.error("Get patients error:", error);
-    return res.status(500).json({ success: false, message: "Unable to fetch patients." });
+    return res
+      .status(500)
+      .json({ success: false, message: "Unable to fetch patients." });
   }
 };
 
@@ -63,10 +69,14 @@ exports.setPatientStatus = async (req, res) => {
     const { isActive } = req.body;
 
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: "Invalid patient ID." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid patient ID." });
     }
     if (typeof isActive !== "boolean") {
-      return res.status(400).json({ success: false, message: "isActive must be true or false." });
+      return res
+        .status(400)
+        .json({ success: false, message: "isActive must be true or false." });
     }
 
     const patient = await User.findOneAndUpdate(
@@ -76,7 +86,9 @@ exports.setPatientStatus = async (req, res) => {
     ).select("fullname email phone isActive createdAt");
 
     if (!patient) {
-      return res.status(404).json({ success: false, message: "Patient not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "Patient not found." });
     }
 
     return res.status(200).json({
@@ -86,6 +98,47 @@ exports.setPatientStatus = async (req, res) => {
     });
   } catch (error) {
     console.error("Set patient status error:", error);
-    return res.status(500).json({ success: false, message: "Unable to update patient." });
+    return res
+      .status(500)
+      .json({ success: false, message: "Unable to update patient." });
+  }
+};
+
+// GET /api/admin/patients/:id
+exports.getPatientById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid patient ID." });
+    }
+
+    const patient = await User.findOne({ _id: id, role: "patient" })
+      .select(
+        "fullname email phone gender dateOfBirth address city state pincode isActive createdAt"
+      )
+      .lean();
+
+    if (!patient) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Patient not found." });
+    }
+
+    const appointmentCount = await Appointment.countDocuments({
+      patientEmail: (patient.email || "").toLowerCase(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      patient: { ...patient, appointments: appointmentCount },
+    });
+  } catch (error) {
+    console.error("Get patient by ID error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Unable to fetch patient." });
   }
 };

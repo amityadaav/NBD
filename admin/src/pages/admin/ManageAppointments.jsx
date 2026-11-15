@@ -1,53 +1,11 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Search, CalendarDays, CheckCircle, XCircle, Clock, Eye, Sparkles,
-  TrendingUp, UserRound, Stethoscope, MapPin, Video, Building2,
-  Filter, X, AlertCircle, FileText, CalendarClock, CheckCheck,
+  TrendingUp, Stethoscope, MapPin, Video, Building2, Filter, X, 
+  AlertCircle, CalendarClock, CheckCheck, RefreshCw, ChevronLeft, ChevronRight
 } from "lucide-react";
+import api from "../../services/api";
 import "./ManageAppointments.css";
-
-const initialAppointments = [
-  {
-    id: 1,
-    patient: "Rahul Sharma",
-    doctor: "Dr. Amit Kumar",
-    hospital: "City Care Hospital",
-    date: "2026-10-16",
-    time: "10:30 AM",
-    type: "In-person",
-    status: "Confirmed",
-  },
-  {
-    id: 2,
-    patient: "Priya Singh",
-    doctor: "Dr. Neha Sharma",
-    hospital: "Sunrise Hospital",
-    date: "2026-10-16",
-    time: "11:00 AM",
-    type: "Online",
-    status: "Pending",
-  },
-  {
-    id: 3,
-    patient: "Aman Verma",
-    doctor: "Dr. Rahul Verma",
-    hospital: "Green Life Hospital",
-    date: "2026-10-17",
-    time: "12:00 PM",
-    type: "In-person",
-    status: "Completed",
-  },
-  {
-    id: 4,
-    patient: "Neha Kumari",
-    doctor: "Dr. Priya Singh",
-    hospital: "Health First Hospital",
-    date: "2026-10-18",
-    time: "02:00 PM",
-    type: "Online",
-    status: "Cancelled",
-  },
-];
 
 const getInitials = (name = "") =>
   name.replace(/^Dr\.?\s+/i, "")
@@ -62,6 +20,14 @@ const formatDate = (value) => {
   return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+const getErrorMessage = (error, fallback) => {
+  if (error.response?.data?.message) return error.response.data.message;
+  if (error.response?.status === 401) return "Session expired. Please log in again.";
+  if (error.response?.status === 403) return "Access denied. Admin privileges required.";
+  if (error.code === "ERR_NETWORK") return "Cannot connect to the backend.";
+  return error.message || fallback;
+};
+
 const STATS = [
   { key: "total", label: "Total", icon: CalendarDays, tone: "teal" },
   { key: "pending", label: "Pending", icon: Clock, tone: "amber" },
@@ -70,53 +36,123 @@ const STATS = [
 ];
 
 function ManageAppointments() {
-  const [appointments, setAppointments] = useState(initialAppointments);
+  // Data State
+  const [appointments, setAppointments] = useState([]);
+  const [stats, setStats] = useState({ total: 0, pending: 0, confirmed: 0, completed: 0, cancelled: 0 });
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
+  
+  // UI State
   const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [updatingId, setUpdatingId] = useState(null);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
-  const filteredAppointments = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return appointments.filter((a) => {
-      const matchesSearch =
-        !query ||
-        a.patient.toLowerCase().includes(query) ||
-        a.doctor.toLowerCase().includes(query) ||
-        a.hospital.toLowerCase().includes(query);
-      const matchesFilter = filter === "All" || a.status === filter;
-      return matchesSearch && matchesFilter;
-    });
-  }, [appointments, search, filter]);
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setQuery(search.trim());
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  const counts = useMemo(() => {
-    const total = appointments.length;
-    const pending = appointments.filter((a) => a.status === "Pending").length;
-    const confirmed = appointments.filter((a) => a.status === "Confirmed").length;
-    const completed = appointments.filter((a) => a.status === "Completed").length;
-    const completionRate = total ? Math.round((completed / total) * 100) : 0;
-    return { total, pending, confirmed, completed, completionRate };
-  }, [appointments]);
+  const fetchAppointments = useCallback(async (background = false) => {
+    if (background) setRefreshing(true);
+    else setLoading(true);
+    setError("");
 
-  const hasFilters = Boolean(search.trim()) || filter !== "All";
+    try {
+      const { data } = await api.get("/admin/appointments", {
+        params: { 
+          status: filter, 
+          search: query, 
+          page, 
+          limit: 20 
+        },
+      });
+      
+      setAppointments(data.appointments || []);
+      setStats(data.statistics || { total: 0, pending: 0, confirmed: 0, completed: 0, cancelled: 0 });
+      setPagination(data.pagination || { page: 1, totalPages: 1, total: 0 });
+    } catch (err) {
+      setError(getErrorMessage(err, "Unable to fetch appointments."));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [filter, query, page]);
+
+  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+
+  const hasFilters = Boolean(query) || filter !== "All";
 
   const resetFilters = () => {
     setSearch("");
     setFilter("All");
+    setPage(1);
   };
 
-  const updateStatus = (id, status) => {
-    setAppointments((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status } : a))
-    );
-    // Keep the modal in sync if it's open
-    setSelectedAppointment((prev) =>
-      prev && prev.id === id ? { ...prev, status } : prev
-    );
+  // Open Details Modal
+  const viewAppointment = async (apt) => {
+    setError("");
+    setDetailsLoading(true);
+    setSelectedAppointment({ ...apt, _loading: true });
+    
+    try {
+      const { data } = await api.get(`/admin/appointments/${apt._id}`);
+      setSelectedAppointment(data.appointment);
+    } catch (err) {
+      setError(getErrorMessage(err, "Unable to load appointment details."));
+      setSelectedAppointment(null);
+    } finally {
+      setDetailsLoading(false);
+    }
   };
 
-  const canConfirm = (a) => a.status === "Pending";
-  const canComplete = (a) => a.status === "Confirmed";
-  const canCancel = (a) => ["Pending", "Confirmed"].includes(a.status);
+  // Update Status (Confirm, Complete, Cancel)
+  const updateStatus = async (id, status) => {
+    setUpdatingId(id);
+    setError("");
+    setNotice("");
+
+    try {
+      const endpoint = status === "Cancelled" 
+        ? `/admin/appointments/${id}/cancel`
+        : `/admin/appointments/${id}/status`;
+
+      const { data } = await api.patch(endpoint, status === "Cancelled" ? {} : { status });
+      
+      setNotice(data.message || `Appointment marked as ${status.toLowerCase()}.`);
+      
+      // Update local list
+      setAppointments((prev) => prev.map(a => a._id === id ? { ...a, status } : a));
+      
+      // Sync modal if open
+      if (selectedAppointment?._id === id) {
+        setSelectedAppointment((prev) => ({ ...prev, status }));
+      }
+      
+      // Refresh background stats
+      await fetchAppointments(true);
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to update appointment status."));
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // Validation helpers matching backend transitions
+  const canConfirm = (s) => s === "Pending";
+  const canComplete = (s) => s === "Confirmed";
+  const canCancel = (s) => ["Pending", "Confirmed"].includes(s);
 
   return (
     <div className="manage-appointments-page">
@@ -134,22 +170,38 @@ function ManageAppointments() {
             <h2>Manage Appointments</h2>
             <p>
               View and manage patient appointments across hospitals.
-              {counts.pending > 0 && (
+              {stats.pending > 0 && (
                 <span className="ma-hero-highlight">
-                  <Clock size={12} /> {counts.pending} pending
+                  <Clock size={12} /> {stats.pending} pending
                 </span>
               )}
             </p>
           </div>
         </div>
 
-        <div className="ma-hero-total">
-          <CalendarDays size={16} />
-          <span>
-            <strong>{counts.total}</strong> total
-          </span>
-        </div>
+        <button
+          className="ma-hero-refresh"
+          onClick={() => fetchAppointments(true)}
+          disabled={loading || refreshing || updatingId !== null}
+        >
+          <RefreshCw size={15} className={refreshing ? "ma-spin" : ""} />
+          {refreshing ? "Refreshing…" : "Refresh"}
+        </button>
       </div>
+
+      {error && (
+        <div className="ma-alert ma-error" role="alert">
+          <AlertCircle size={15} /> <span>{error}</span>
+          <button type="button" className="ma-alert-retry" onClick={() => fetchAppointments()} disabled={loading}>
+            Retry
+          </button>
+        </div>
+      )}
+      {notice && (
+        <div className="ma-alert ma-success" role="status">
+          <CheckCircle size={15} /> <span>{notice}</span>
+        </div>
+      )}
 
       {/* ---------- Stats ---------- */}
       <div className="ma-stats">
@@ -164,17 +216,19 @@ function ManageAppointments() {
             </div>
             <div className="ma-stat-body">
               <span>{label}</span>
-              <h3>{counts[key]}</h3>
+              <h3>{loading ? "…" : stats[key]}</h3>
             </div>
-            {key === "completed" && counts.total > 0 && (
-              <small className="ma-stat-meta">{counts.completionRate}% completion</small>
+            {key === "completed" && stats.total > 0 && (
+              <small className="ma-stat-meta">
+                {Math.round((stats.completed / stats.total) * 100)}% completion
+              </small>
             )}
           </div>
         ))}
       </div>
 
       {/* ---------- Card ---------- */}
-      <div className="ma-card">
+      <div className="ma-cards">
         <div className="ma-toolbar">
           <div className="ma-search">
             <Search size={17} />
@@ -203,7 +257,7 @@ function ManageAppointments() {
               <select
                 className="ma-filter"
                 value={filter}
-                onChange={(e) => setFilter(e.target.value)}
+                onChange={(e) => { setFilter(e.target.value); setPage(1); }}
                 aria-label="Filter appointments by status"
               >
                 <option value="All">All Status</option>
@@ -240,7 +294,13 @@ function ManageAppointments() {
             </thead>
 
             <tbody>
-              {filteredAppointments.length === 0 ? (
+              {loading ? (
+                 Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="ma-skeleton-row">
+                    <td colSpan="6"><div className="ma-skeleton-line" /></td>
+                  </tr>
+                ))
+              ) : appointments.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="ma-empty">
                     <div className="ma-empty-state">
@@ -255,99 +315,109 @@ function ManageAppointments() {
                   </td>
                 </tr>
               ) : (
-                filteredAppointments.map((a) => (
-                  <tr key={a.id}>
-                    <td>
-                      <div className="ma-user-cell">
-                        <span className="ma-user-avatar">
-                          {getInitials(a.patient)}
-                        </span>
-                        <div className="ma-user-meta">
-                          <strong>{a.patient}</strong>
+                appointments.map((a) => {
+                  const patientName = a.patientName || "N/A";
+                  const doctorName = a.doctorId?.name || "N/A";
+                  const hospitalName = a.hospitalId?.hospitalName || "N/A";
+                  const type = a.appointmentType || "In-person";
+
+                  return (
+                    <tr key={a._id}>
+                      <td>
+                        <div className="ma-user-cell">
+                          <span className="ma-user-avatar">
+                            {getInitials(patientName)}
+                          </span>
+                          <div className="ma-user-meta">
+                            <strong>{patientName}</strong>
+                            <small>
+                              <Stethoscope size={10} /> {doctorName}
+                            </small>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td>
+                        <div className="ma-hospital-cell">
+                          <Building2 size={13} />
+                          <span>{hospitalName}</span>
+                        </div>
+                      </td>
+
+                      <td>
+                        <div className="ma-date-cell">
+                          <strong>{formatDate(a.appointmentDate)}</strong>
                           <small>
-                            <Stethoscope size={10} /> {a.doctor}
+                            <Clock size={10} /> {a.appointmentTime || "N/A"}
                           </small>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td>
-                      <div className="ma-hospital-cell">
-                        <Building2 size={13} />
-                        <span>{a.hospital}</span>
-                      </div>
-                    </td>
+                      <td>
+                        <span className={`ma-type ${isVideoType(type) ? "ma-type-video" : ""}`}>
+                          {isVideoType(type) ? (
+                            <><Video size={11} /> {type}</>
+                          ) : type}
+                        </span>
+                      </td>
 
-                    <td>
-                      <div className="ma-date-cell">
-                        <strong>{formatDate(a.date)}</strong>
-                        <small>
-                          <Clock size={10} /> {a.time}
-                        </small>
-                      </div>
-                    </td>
+                      <td>
+                        <span className={`ma-status ${a.status.toLowerCase()}`}>
+                          {a.status}
+                        </span>
+                      </td>
 
-                    <td>
-                      <span className={`ma-type ${isVideoType(a.type) ? "ma-type-video" : ""}`}>
-                        {isVideoType(a.type) ? (
-                          <><Video size={11} /> {a.type}</>
-                        ) : a.type}
-                      </span>
-                    </td>
-
-                    <td>
-                      <span className={`ma-status ${a.status.toLowerCase()}`}>
-                        {a.status}
-                      </span>
-                    </td>
-
-                    <td>
-                      <div className="ma-actions">
-                        <button
-                          className="ma-view-btn"
-                          title="View appointment"
-                          aria-label={`View appointment for ${a.patient}`}
-                          onClick={() => setSelectedAppointment(a)}
-                        >
-                          <Eye size={16} />
-                        </button>
-
-                        {canConfirm(a) && (
+                      <td>
+                        <div className="ma-actions">
                           <button
-                            className="ma-confirm-btn"
-                            title="Confirm appointment"
-                            aria-label={`Confirm appointment for ${a.patient}`}
-                            onClick={() => updateStatus(a.id, "Confirmed")}
+                            className="ma-view-btn"
+                            title="View appointment"
+                            onClick={() => viewAppointment(a)}
                           >
-                            <CheckCircle size={16} />
+                            <Eye size={16} />
                           </button>
-                        )}
 
-                        {canComplete(a) && (
-                          <button
-                            className="ma-complete-btn"
-                            title="Mark completed"
-                            aria-label={`Mark appointment for ${a.patient} completed`}
-                            onClick={() => updateStatus(a.id, "Completed")}
-                          >
-                            <CheckCheck size={16} />
-                          </button>
-                        )}
+                          {canConfirm(a.status) && (
+                            <button
+                              className="ma-confirm-btn"
+                              title="Confirm appointment"
+                              disabled={updatingId !== null}
+                              onClick={() => updateStatus(a._id, "Confirmed")}
+                            >
+                              <CheckCircle size={16} />
+                            </button>
+                          )}
 
-                        {canCancel(a) && (
-                          <button
-                            className="ma-cancel-btn"
-                            title="Cancel appointment"
-                            aria-label={`Cancel appointment for ${a.patient}`}
-                            onClick={() => updateStatus(a.id, "Cancelled")}
-                          >
-                            <XCircle size={16} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          {canComplete(a.status) && (
+                            <button
+                              className="ma-complete-btn"
+                              title="Mark completed"
+                              disabled={updatingId !== null}
+                              onClick={() => updateStatus(a._id, "Completed")}
+                            >
+                              <CheckCheck size={16} />
+                            </button>
+                          )}
+
+                          {canCancel(a.status) && (
+                            <button
+                              className="ma-cancel-btn"
+                              title="Cancel appointment"
+                              disabled={updatingId !== null}
+                              onClick={() => updateStatus(a._id, "Cancelled")}
+                            >
+                              <XCircle size={16} />
+                            </button>
+                          )}
+
+                          {updatingId === a._id && (
+                            <RefreshCw size={13} className="ma-spin" style={{ marginLeft: 4 }} />
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -355,10 +425,34 @@ function ManageAppointments() {
 
         <div className="ma-footer">
           <span>
-            Showing <strong>{filteredAppointments.length}</strong> of{" "}
-            <strong>{appointments.length}</strong> appointments
+            Showing <strong>{appointments.length}</strong> of{" "}
+            <strong>{pagination.total}</strong> appointments
           </span>
           {hasFilters && <span className="ma-footer-hint">· filters active</span>}
+
+          {pagination.totalPages > 1 && (
+            <div className="ma-pager">
+              <button
+                type="button"
+                className="ma-pager-btn"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                <ChevronLeft size={14} /> Prev
+              </button>
+              <span className="ma-pager-label">
+                Page <strong>{pagination.page}</strong> of {pagination.totalPages}
+              </span>
+              <button
+                type="button"
+                className="ma-pager-btn"
+                disabled={page >= pagination.totalPages || loading}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next <ChevronRight size={14} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -366,112 +460,124 @@ function ManageAppointments() {
       {selectedAppointment && (
         <div
           className="ma-modal-backdrop"
-          onClick={() => setSelectedAppointment(null)}
+          onClick={() => !updatingId && setSelectedAppointment(null)}
         >
           <section
             className="ma-modal"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="ma-modal-title"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="ma-modal-hero">
               <div className="ma-modal-hero-top">
                 <div>
-                  <span className="ma-modal-eyebrow">Appointment</span>
+                  <span className="ma-modal-eyebrow">Appointment Details</span>
                   <h3 id="ma-modal-title">
-                    APT-{String(selectedAppointment.id).padStart(4, "0")}
+                    {selectedAppointment._id ? `APT-${selectedAppointment._id.slice(-6).toUpperCase()}` : "Loading…"}
                   </h3>
                 </div>
                 <button
                   type="button"
                   className="ma-close-btn"
                   onClick={() => setSelectedAppointment(null)}
-                  aria-label="Close details"
+                  disabled={updatingId !== null}
                 >
                   <X size={18} />
                 </button>
               </div>
 
               <div className="ma-modal-hero-body">
-                <span className={`ma-status ${selectedAppointment.status.toLowerCase()}`}>
+                <span className={`ma-status ${selectedAppointment.status?.toLowerCase()}`}>
                   {selectedAppointment.status}
                 </span>
                 <div className="ma-modal-hero-stats">
                   <span className="ma-hero-stat">
                     <CalendarDays size={12} />
-                    <strong>{formatDate(selectedAppointment.date)}</strong>
+                    <strong>{formatDate(selectedAppointment.appointmentDate)}</strong>
                   </span>
                   <span className="ma-hero-stat">
                     <Clock size={12} />
-                    <strong>{selectedAppointment.time}</strong>
-                  </span>
-                  <span className="ma-hero-stat">
-                    {isVideoType(selectedAppointment.type) ? <Video size={12} /> : <MapPin size={12} />}
-                    <strong>{selectedAppointment.type}</strong>
+                    <strong>{selectedAppointment.appointmentTime}</strong>
                   </span>
                 </div>
               </div>
             </div>
 
             <div className="ma-modal-body">
-              <div className="ma-modal-section">
-                <h5>Patient</h5>
-                <div className="ma-modal-person">
-                  <span className="ma-user-avatar ma-user-avatar-lg">
-                    {getInitials(selectedAppointment.patient)}
-                  </span>
-                  <div>
-                    <strong>{selectedAppointment.patient}</strong>
+              {detailsLoading ? (
+                <div style={{ textAlign: "center", padding: "20px 0", color: "var(--muted-foreground)" }}>
+                  <RefreshCw size={18} className="ma-spin" /> Loading details…
+                </div>
+              ) : (
+                <>
+                  <div className="ma-modal-section">
+                    <h5>Patient</h5>
+                    <div className="ma-modal-person">
+                      <span className="ma-user-avatar ma-user-avatar-lg">
+                        {getInitials(selectedAppointment.patientName)}
+                      </span>
+                      <div>
+                        <strong>{selectedAppointment.patientName}</strong>
+                        <small style={{ display: "block", color: "var(--muted-foreground)" }}>
+                          {selectedAppointment.patientEmail || selectedAppointment.patientPhone || "No contact info"}
+                        </small>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="ma-modal-section">
-                <h5>Doctor</h5>
-                <div className="ma-modal-person">
-                  <span className="ma-user-avatar ma-user-avatar-lg ma-avatar-teal">
-                    {getInitials(selectedAppointment.doctor)}
-                  </span>
-                  <div>
-                    <strong>{selectedAppointment.doctor}</strong>
+                  <div className="ma-modal-section">
+                    <h5>Doctor</h5>
+                    <div className="ma-modal-person">
+                      <span className="ma-user-avatar ma-user-avatar-lg ma-avatar-teal">
+                        {getInitials(selectedAppointment.doctorId?.name)}
+                      </span>
+                      <div>
+                        <strong>{selectedAppointment.doctorId?.name || "N/A"}</strong>
+                        <small style={{ display: "block", color: "var(--muted-foreground)" }}>
+                          {selectedAppointment.doctorId?.specialty || "General"}
+                        </small>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="ma-modal-section">
-                <h5>Hospital</h5>
-                <div className="ma-modal-line">
-                  <Building2 size={14} />
-                  <span>{selectedAppointment.hospital}</span>
-                </div>
-              </div>
+                  <div className="ma-modal-section">
+                    <h5>Hospital</h5>
+                    <div className="ma-modal-line">
+                      <Building2 size={14} />
+                      <span>{selectedAppointment.hospitalId?.hospitalName || "N/A"}</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="ma-modal-actions">
-              {canConfirm(selectedAppointment) && (
+              {canConfirm(selectedAppointment.status) && (
                 <button
                   type="button"
                   className="ma-confirm-btn-lg"
-                  onClick={() => updateStatus(selectedAppointment.id, "Confirmed")}
+                  disabled={updatingId !== null}
+                  onClick={() => updateStatus(selectedAppointment._id, "Confirmed")}
                 >
                   <CheckCircle size={15} /> Confirm
                 </button>
               )}
-              {canComplete(selectedAppointment) && (
+              {canComplete(selectedAppointment.status) && (
                 <button
                   type="button"
                   className="ma-complete-btn-lg"
-                  onClick={() => updateStatus(selectedAppointment.id, "Completed")}
+                  disabled={updatingId !== null}
+                  onClick={() => updateStatus(selectedAppointment._id, "Completed")}
                 >
                   <CheckCheck size={15} /> Mark Completed
                 </button>
               )}
-              {canCancel(selectedAppointment) && (
+              {canCancel(selectedAppointment.status) && (
                 <button
                   type="button"
                   className="ma-cancel-btn-lg"
-                  onClick={() => updateStatus(selectedAppointment.id, "Cancelled")}
+                  disabled={updatingId !== null}
+                  onClick={() => updateStatus(selectedAppointment._id, "Cancelled")}
                 >
                   <XCircle size={15} /> Cancel
                 </button>
@@ -480,6 +586,7 @@ function ManageAppointments() {
                 type="button"
                 className="ma-secondary-btn"
                 onClick={() => setSelectedAppointment(null)}
+                disabled={updatingId !== null}
               >
                 Close
               </button>

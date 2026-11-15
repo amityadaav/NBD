@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import "./Login.css";
-import { Stethoscope } from "lucide-react";
+import { Stethoscope ,LifeBuoy} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 
@@ -187,12 +187,16 @@ function Login() {
             </button>
           </form>
 
-          <p className="signup-text">
-            Don't have an account?{" "}
-            <Link to="/signup" className="signup-link">
-              Sign Up
-            </Link>
-          </p>
+<div className="login-help-section">
+  <p className="help-text">
+    Having trouble logging in?
+  </p>
+
+  <Link to="/support-ticket" className="support-link">
+    <LifeBuoy size={16} />
+    Raise a Support Ticket
+  </Link>
+</div>
 
           <div className="login-links">
             <span>FAQ</span>

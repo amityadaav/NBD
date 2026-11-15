@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Hospital, Stethoscope, Users, CalendarDays,
-  Settings, LogOut, HeartPulse, HelpCircle, Activity, PanelLeftClose, PanelLeft, X
+  Settings, LogOut, HeartPulse, HelpCircle, Activity, PanelLeftClose, PanelLeft, X, Ticket
 } from "lucide-react";
 import "./Sidebar.css";
 
@@ -41,9 +41,11 @@ function Sidebar() {
   const primaryNav = [
     { name: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Hospitals", path: "/admin/hospitals", icon: Hospital },
+    { name: "Blood Donations", path: "/admin/blood-donations", icon: HeartPulse },
     { name: "Doctors", path: "/admin/doctors", icon: Stethoscope },
     { name: "Patients", path: "/admin/patients", icon: Users },
     { name: "Appointments", path: "/admin/appointments", icon: CalendarDays },
+    { name: "Support Tickets", path: "/admin/support-tickets", icon: Ticket }, // <-- ADDED HERE
   ];
 
   const secondaryNav = [

@@ -78,4 +78,5 @@ router.post("/", authenticate, allowRoles("hospital_admin"), createDoctor);
 
 router.get("/:id", getDoctorById);
 
+
 module.exports = router;

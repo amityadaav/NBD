@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Search, CalendarDays, Clock, CheckCircle, XCircle, Eye, UserRound,
   Stethoscope, X, ChevronLeft, ChevronRight, AlertCircle, RefreshCw,
   Sparkles, IndianRupee, Video, MapPin, Phone, Mail, FileText, Filter,
-  CalendarClock, TrendingUp, User,
+  CalendarClock, TrendingUp, User, Pill,
 } from "lucide-react";
 import api from "../../services/api";
 import "./HospitalAppointments.css";
@@ -56,6 +57,8 @@ const formatCurrency = (value) => {
 const isVideoType = (type) => /video|online|tele/i.test(type || "");
 
 function HospitalAppointments() {
+  const navigate = useNavigate();
+
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [counts, setCounts] = useState({
@@ -128,7 +131,6 @@ function HospitalAppointments() {
   useEffect(() => { fetchCounts(); }, [fetchCounts]);
   useEffect(() => { fetchDoctors(); }, [fetchDoctors]);
 
-  // Reset confirm state when modal closes
   useEffect(() => {
     if (!selectedAppointment) setConfirmCancel(false);
   }, [selectedAppointment]);
@@ -155,7 +157,6 @@ function HospitalAppointments() {
       await refreshAll();
     } catch (err) {
       setError(getErrorMessage(err, "Unable to update appointment."));
-      // Do NOT clear the modal — let the user retry or close it themselves.
     } finally {
       setUpdating(false);
     }
@@ -170,7 +171,6 @@ function HospitalAppointments() {
 
   const hasFilters = statusFilter !== "All" || dateFilter || doctorFilter !== "All";
 
-  // Completion rate excludes cancelled from the denominator
   const completionRate = useMemo(() => {
     const effective = counts.total - (counts.cancelled || 0);
     if (!effective) return 0;
@@ -189,16 +189,26 @@ function HospitalAppointments() {
           <p>Review, confirm and manage all patient bookings for your hospital.</p>
         </div>
 
-        <button
-          type="button"
-          className="ha-icon-btn"
-          onClick={refreshAll}
-          disabled={loading}
-          aria-label="Refresh appointments"
-          title="Refresh"
-        >
-          <RefreshCw size={16} className={loading ? "ha-spin" : ""} />
-        </button>
+        <div className="ha-header-actions">
+          <button
+            type="button"
+            className="ha-write-prescription-btn"
+            onClick={() => navigate("/hospital/prescriptions/new")}
+          >
+            <Pill size={15} /> Write Prescription
+          </button>
+
+          <button
+            type="button"
+            className="ha-icon-btn"
+            onClick={refreshAll}
+            disabled={loading}
+            aria-label="Refresh appointments"
+            title="Refresh"
+          >
+            <RefreshCw size={16} className={loading ? "ha-spin" : ""} />
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -404,17 +414,35 @@ function HospitalAppointments() {
                     </td>
 
                     <td>
-                      <button
-                        type="button"
-                        className="ha-view-btn"
-                        onClick={() => {
-                          setSelectedAppointment(appointment);
-                          setConfirmCancel(false);
-                        }}
-                        aria-label={`View appointment ${shortId(appointment._id)}`}
-                      >
-                        <Eye size={15} /> View
-                      </button>
+                      <div className="ha-row-actions">
+                        <button
+                          type="button"
+                          className="ha-view-btn"
+                          onClick={() => {
+                            setSelectedAppointment(appointment);
+                            setConfirmCancel(false);
+                          }}
+                          aria-label={`View appointment ${shortId(appointment._id)}`}
+                        >
+                          <Eye size={15} /> View
+                        </button>
+
+                        {["Confirmed", "Completed"].includes(appointment.status) && (
+                          <button
+                            type="button"
+                            className="ha-view-btn ha-view-btn-accent"
+                            onClick={() =>
+                              navigate(
+                                `/hospital/prescriptions/new?appointmentId=${appointment._id}`
+                              )
+                            }
+                            title="Write prescription"
+                            aria-label="Write prescription"
+                          >
+                            <Pill size={15} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -542,6 +570,21 @@ function HospitalAppointments() {
             </div>
 
             <div className="ha-modal-actions">
+              {["Confirmed", "Completed"].includes(selectedAppointment.status) && !confirmCancel && (
+                <button
+                  type="button"
+                  className="ha-prescribe-btn"
+                  disabled={updating}
+                  onClick={() =>
+                    navigate(
+                      `/hospital/prescriptions/new?appointmentId=${selectedAppointment._id}`
+                    )
+                  }
+                >
+                  <Pill size={16} /> Write Prescription
+                </button>
+              )}
+
               {confirmCancel ? (
                 <div className="ha-confirm-cancel">
                   <span className="ha-confirm-cancel-text">Cancel this appointment?</span>

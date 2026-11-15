@@ -694,3 +694,45 @@
     transition-duration: 0.01ms !important;
   }
 }
+/* Row-level action buttons in the appointment table */
+.hospital-actions { display: flex; align-items: center; gap: 6px; }
+
+.hospital-actions .approve-btn,
+.hospital-actions .reject-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hospital-actions .approve-btn {
+  border-color: hsl(150 55% 82%);
+  background: hsl(150 55% 96%);
+  color: hsl(152 55% 32%);
+}
+.hospital-actions .approve-btn:hover:not(:disabled) {
+  background: hsl(150 55% 90%);
+  border-color: hsl(150 55% 72%);
+}
+.hospital-actions .reject-btn {
+  border-color: hsl(0 84% 88%);
+  background: hsl(0 84% 97%);
+  color: hsl(0 72% 46%);
+}
+.hospital-actions .reject-btn:hover:not(:disabled) {
+  background: hsl(0 84% 92%);
+  border-color: hsl(0 84% 78%);
+}
+.hospital-actions .approve-btn:disabled,
+.hospital-actions .reject-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Keep table tidy with 5 columns */
+.dashboard-table { min-width: 560px; }

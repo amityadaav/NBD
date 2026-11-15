@@ -131,7 +131,7 @@ export const NAV = [
   ["/hospitals", "Hospitals"],
   ["/book-appointment", "Appointments"],
   ["/list-your-clinic", "List Your Hospitals"],
-  ["/blood-donation", "Blood Donation"],
+  ["/donate-blood", "Donate Blood"],
   ["/about", "About"],
 ];
 
@@ -196,9 +196,14 @@ export default function Navbar() {
       <div className="navbar-container">
         {/* Logo */}
         <Link to="/" className="logo" onClick={closeMenu}>
-          <div className="brand-icon">
+          {/* <div className="brand-icon">
             <Stethoscope size={20} />
-          </div>
+          </div> */}
+          <img
+            src="/favicon-32x32.png"
+            alt="Nearby Doctor Logo"
+            className="brand-icon"
+          />
 
           <h3>
             NearBy<span>Doctor</span>

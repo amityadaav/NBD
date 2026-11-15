@@ -91,6 +91,20 @@ hospitalId: {
   ref: "Hospital",
   default: null,
 },
+    // ⬇⬇⬇ NEW — used by the Settings page for all roles
+    preferences: {
+      emailNotifications: { type: Boolean, default: true },
+      smsNotifications: { type: Boolean, default: false },
+      appointmentReminders: { type: Boolean, default: true },
+      prescriptionAlerts: { type: Boolean, default: true },
+      adminAlerts: { type: Boolean, default: true },
+      language: { type: String, default: "en" },
+      theme: {
+        type: String,
+        enum: ["light", "dark", "system"],
+        default: "system",
+      },
+    },
   },
   {
     timestamps: true,

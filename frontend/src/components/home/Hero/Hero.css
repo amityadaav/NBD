@@ -57,10 +57,9 @@
   overflow: hidden;
 }
 
+/* ---- Flash-safe entry animation: visible by default, animate FROM hidden ---- */
 .sm-left > * {
-  opacity: 0;
-  transform: translateY(14px);
-  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .sm-left > *:nth-child(1) { animation-delay: 0.05s; }
 .sm-left > *:nth-child(2) { animation-delay: 0.15s; }
@@ -68,7 +67,8 @@
 .sm-left > *:nth-child(4) { animation-delay: 0.35s; }
 
 @keyframes fadeUp {
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .sm-title {
@@ -166,9 +166,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #fff;
-  opacity: 0;
-  transform: translateY(10px);
-  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.45s forwards;
+  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 .sm-stats:hover {
@@ -239,8 +237,7 @@
   object-position: bottom center;
   pointer-events: none;
   user-select: none;
-  opacity: 0;
-  animation: personIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+  animation: personIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
 }
 @keyframes personIn {
   from { opacity: 0; transform: translateX(-50%) translateY(24px); }
@@ -260,7 +257,7 @@
   font-size: 15px;
   font-weight: 500;
   box-shadow: 0 6px 20px rgba(13, 23, 20, 0.1);
-  opacity: 0;
+  animation-fill-mode: both;
 }
 .sm-chip::before {
   content: "";
@@ -304,9 +301,7 @@
 
 .sm-right__top,
 .sm-right__bottom {
-  opacity: 0;
-  transform: translateY(14px);
-  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .sm-right__top    { animation-delay: 0.35s; }
 .sm-right__bottom { animation-delay: 0.5s; }
@@ -357,6 +352,9 @@
 .sm-arrow:hover { transform: translate(2px, -2px); box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.5); }
 .sm-arrow:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 
+/* ============================================================
+   RESPONSIVE — Tablet
+   ============================================================ */
 @media (max-width: 1180px) {
   .sm-stats { width: min(440px, 52%); gap: 16px; }
   .sm-stats__thumb { display: none; }
@@ -366,6 +364,9 @@
   .sm-right__top { width: min(340px, 70%); }
 }
 
+/* ============================================================
+   RESPONSIVE — Mobile (stacked)
+   ============================================================ */
 @media (max-width: 980px) {
   .sm-hero { padding: 10px; }
   .sm-stage { display: flex; flex-direction: column; min-height: 0; border-radius: 24px; }
@@ -385,7 +386,7 @@
     height: auto;
     max-width: none;
     margin-top: 24px;
-    animation: personInMobile 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+    animation: personInMobile 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
   }
   @keyframes personInMobile {
     from { opacity: 0; transform: translateY(24px); }
@@ -399,18 +400,152 @@
   .sm-stats { position: relative; inset: auto; width: 100%; margin: 28px 0 0; }
 }
 
+/* ============================================================
+   RESPONSIVE — Small devices (≤520px)
+   Same UI, just reflowed and tightened.
+   ============================================================ */
 @media (max-width: 520px) {
-  .sm-actions { flex-direction: column; }
-  .sm-action { width: 100%; justify-content: flex-start; }
-  .sm-stats { flex-direction: column; align-items: stretch; padding: 10px; }
-  .sm-stats__thumb { flex-basis: auto; width: 100%; height: 150px; }
-  .sm-stats__grid { padding: 4px 8px 8px; justify-content: space-between; }
+  .sm-hero {
+    padding: 8px;
+  }
+
+  .sm-stage {
+    border-radius: 20px;
+  }
+
+  /* Tighter left column */
+  .sm-left {
+    padding: 32px 18px 0;
+  }
+
+  .sm-title {
+    font-size: clamp(2.4rem, 13vw, 3.2rem);
+    letter-spacing: -0.035em;
+  }
+
+  .sm-tagline {
+    margin: 18px 0 22px;
+    font-size: 15px;
+    line-height: 1.55;
+    max-width: 100%;
+  }
+
+  /* Full-width stacked action buttons, same pill style */
+  .sm-actions {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .sm-action {
+    width: 100%;
+    height: 52px;
+    justify-content: flex-start;
+    padding: 0 18px 0 7px;
+    font-size: 14.5px;
+  }
+  .sm-action__icon { width: 38px; height: 38px; }
+
+  /* Keep stats card horizontal (same visual language), just fit it */
+  .sm-stats {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    margin: 26px 0 0;
+    padding: 10px 14px 10px 10px;
+    gap: 14px;
+    flex-direction: row;
+    align-items: center;
+  }
+  .sm-stats__thumb {
+    flex: 0 0 96px;
+    width: 96px;
+    height: 84px;
+    display: grid;
+  }
+  .sm-stats__grid {
+    flex: 1;
+    gap: 12px;
+    justify-content: space-between;
+    padding: 0;
+    margin: 0;
+  }
+  .sm-stats__grid dd {
+    font-size: 1.15rem;
+  }
+  .sm-stats__grid dt {
+    font-size: 10.5px;
+    max-width: 7ch;
+  }
+
+  /* Image sits below the stats card, centered, contained */
+  .sm-person {
+    width: min(340px, 78%);
+    margin-top: 18px;
+  }
+
+  /* Panel sits behind the image area only */
+  .sm-panel {
+    top: 50%;
+    height: 50%;
+    border-radius: 20px 20px 0 0;
+  }
+
+  /* Right panel — comfortable spacing on small screens */
+  .sm-right {
+    padding: 22px 18px 24px;
+    gap: 22px;
+  }
+  .sm-right__top h2 {
+    font-size: clamp(1.35rem, 5.5vw, 1.7rem);
+  }
+  .sm-right__top p {
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .sm-right__bottom {
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+  }
+  .sm-right__row {
+    gap: 14px;
+  }
+  .sm-avatars span {
+    width: 34px;
+    height: 34px;
+    font-size: 12px;
+  }
+  .sm-arrow {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Hide floating chips on smallest screens (they'd overlap the image) */
+  .sm-chip { display: none; }
 }
 
+/* ============================================================
+   Reduced motion — guarantees visible content, no flash
+   ============================================================ */
 @media (prefers-reduced-motion: reduce) {
   .sm-hero *, .sm-hero *::before, .sm-hero *::after {
     animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+  /* Guarantee content is visible even if animations are killed */
+  .sm-left > *,
+  .sm-person,
+  .sm-stats,
+  .sm-right__top,
+  .sm-right__bottom,
+  .sm-chip {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .sm-person { transform: translateX(-50%) !important; }
+  @media (max-width: 980px) {
+    .sm-person { transform: none !important; }
   }
 }

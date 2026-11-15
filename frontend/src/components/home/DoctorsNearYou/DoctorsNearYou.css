@@ -15,6 +15,9 @@
   box-sizing: border-box;
 }
 
+/* ============================================================
+   Header
+   ============================================================ */
 .section-headers {
   display: flex;
   align-items: flex-end;
@@ -60,6 +63,9 @@
 .view-all:hover { color: var(--primary-hover, #115e59); }
 .view-all:hover svg { transform: translateX(4px); }
 
+/* ============================================================
+   Toolbar
+   ============================================================ */
 .doctor-toolbar {
   display: flex;
   align-items: stretch;
@@ -81,7 +87,8 @@
   transition: all 0.15s ease;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-.location-box:hover, .location-box:focus-visible {
+.location-box:hover,
+.location-box:focus-visible {
   border-color: var(--primary, #0f766e);
   outline: none;
   box-shadow: 0 0 0 3px hsl(168 45% 45% / 0.12);
@@ -98,9 +105,16 @@
   color: var(--primary, #0f766e);
 }
 
-.location-content { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.location-content { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .location-content small { color: var(--muted-foreground, #64748b); font-size: 11px; font-weight: 500; }
-.location-content strong { color: var(--foreground, #0f172a); font-size: 13px; font-weight: 600; }
+.location-content strong {
+  color: var(--foreground, #0f172a);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .location-arrow { color: var(--muted-foreground, #64748b); flex-shrink: 0; }
 
 .search-box {
@@ -120,7 +134,11 @@
   box-shadow: 0 0 0 3px hsl(168 45% 45% / 0.12);
 }
 
-.search-icon { color: var(--muted-foreground, #64748b); flex-shrink: 0; margin-right: 10px; }
+.search-icon {
+  color: var(--muted-foreground, #64748b);
+  flex-shrink: 0;
+  margin-right: 10px;
+}
 
 .search-box input {
   flex: 1;
@@ -151,9 +169,12 @@
 }
 .search-clear:hover { background: #cbd5e1; color: #0f172a; }
 
+/* ============================================================
+   Grid + Card
+   ============================================================ */
 .doctor-data {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
 }
 
@@ -166,12 +187,19 @@
   border-radius: 16px;
   background: var(--card, #fff);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease,
+              box-shadow 0.25s ease;
+  /* visible by default → no flash on reload */
 }
 .doctor-card:hover {
   transform: translateY(-4px);
   border-color: hsl(168 45% 82%);
   box-shadow: 0 16px 32px -12px rgba(15, 23, 42, 0.12);
+}
+.doctor-card:focus-visible {
+  outline: 2px solid var(--primary, #0f766e);
+  outline-offset: 3px;
 }
 
 .doctor-image {
@@ -205,6 +233,7 @@
   padding: 4px 10px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   font-size: 10.5px;
   font-weight: 700;
@@ -214,7 +243,13 @@
 .availability-badge.is-available { color: #15803d; }
 .availability-badge.is-unavailable { color: #b45309; }
 
-.status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
 .is-available .status-dot { animation: pulse-green 2s infinite; }
 @keyframes pulse-green {
   0%   { box-shadow: 0 0 0 0 rgba(21, 128, 61, 0.4); }
@@ -278,7 +313,9 @@
   color: var(--muted-foreground, #64748b);
   font-size: 11.5px;
   line-height: 1.4;
+  min-width: 0;
 }
+.doctor-meta span > *:last-child { overflow: hidden; text-overflow: ellipsis; }
 .doctor-meta svg { color: #94a3b8; flex-shrink: 0; }
 
 .doctor-bottom {
@@ -311,7 +348,14 @@
   border-color: var(--primary, #0f766e);
   color: #fff;
 }
+.book-btn:focus-visible {
+  outline: 2px solid var(--primary, #0f766e);
+  outline-offset: 2px;
+}
 
+/* ============================================================
+   Empty + Error states
+   ============================================================ */
 .empty-state {
   grid-column: 1 / -1;
   display: flex;
@@ -349,6 +393,7 @@
   border: 1px solid #fecaca;
   border-radius: 12px;
   color: #dc2626;
+  text-align: center;
 }
 .error-message button {
   padding: 6px 16px;
@@ -361,6 +406,9 @@
   cursor: pointer;
 }
 
+/* ============================================================
+   Skeleton — starts visible, shimmers instantly (no flash)
+   ============================================================ */
 .skeleton { pointer-events: none; }
 .skeleton-image {
   height: 140px;
@@ -382,52 +430,9 @@
   100% { background-position: 0 50%; }
 }
 
-@media (max-width: 1200px) {
-  .doctor-data { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-
-@media (max-width: 900px) {
-  .near-section { padding: 60px 0; }
-  .doctor-data { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .doctor-toolbar { flex-direction: column; gap: 12px; }
-  .location-box { width: 100%; box-sizing: border-box; }
-}
-
-@media (max-width: 600px) {
-  .near-section { padding: 40px 0; }
-  .near-section .container { padding: 0 16px; }
-  .section-headers { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .section-headers h2 { font-size: 24px; }
-  .doctor-data { grid-template-columns: 1fr; gap: 16px; }
-
-  .doctor-card { flex-direction: row; }
-  .doctor-image {
-    width: 120px;
-    height: auto;
-    min-height: 100%;
-    align-self: stretch;
-    flex-shrink: 0;
-    border-radius: 16px 0 0 16px;
-  }
-  .doctor-image img { width: 72px; height: 72px; }
-  .availability-badge {
-    font-size: 9px;
-    padding: 3px 6px;
-    bottom: 8px;
-    width: max-content;
-    max-width: 100px;
-    white-space: normal;
-    text-align: center;
-  }
-
-  .doctor-info { padding: 14px; }
-  .doctor-header { flex-direction: column; gap: 4px; }
-  .doctor-rating { align-self: flex-start; }
-
-  .doctor-bottom { flex-direction: column; align-items: stretch; gap: 10px; }
-  .book-btn { width: 100%; text-align: center; }
-}
-
+/* ============================================================
+   Pagination
+   ============================================================ */
 .dny-pagination {
   display: flex;
   align-items: center;
@@ -491,16 +496,171 @@
   letter-spacing: 0.05em;
 }
 
-@media (max-width: 600px) {
-  .dny-pagination { gap: 8px; }
-  .dny-page-btn { padding: 7px 10px; font-size: 12px; }
-  .dny-page-num { min-width: 32px; height: 32px; font-size: 12.5px; }
+/* ============================================================
+   Responsive — Tablet
+   ============================================================ */
+@media (max-width: 1200px) {
+  .doctor-data { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
+@media (max-width: 900px) {
+  .near-section { padding: 60px 0; }
+  .doctor-data { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .doctor-toolbar { flex-direction: column; gap: 12px; }
+  .location-box { width: 100%; min-width: 0; box-sizing: border-box; }
+}
+
+/* ============================================================
+   Responsive — Small devices (≤600px)
+   Same UI: horizontal cards, identical badges, tab-friendly pagination
+   ============================================================ */
+@media (max-width: 600px) {
+  .near-section { padding: 40px 0; }
+  .near-section .container { padding: 0 16px; }
+
+  .section-headers {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .section-headers h2 { font-size: 22px; }
+  .view-all { font-size: 13px; }
+
+  .doctor-toolbar { margin-bottom: 20px; gap: 10px; }
+
+  .doctor-data { grid-template-columns: 1fr; gap: 14px; }
+
+  /* Horizontal card — image pinned left, info fills remaining space */
+  .doctor-card {
+    flex-direction: row;
+    align-items: stretch;
+    min-height: 148px;
+  }
+
+  .doctor-image {
+    width: 116px;
+    height: auto;
+    min-height: 100%;
+    align-self: stretch;
+    flex-shrink: 0;
+    border-radius: 16px 0 0 16px;
+    /* keep vertical centering of avatar & badge */
+    flex-direction: column;
+    justify-content: center;
+    padding: 12px 8px;
+    gap: 8px;
+  }
+  .doctor-image img {
+    width: 64px;
+    height: 64px;
+    border-width: 2px;
+  }
+
+  /* Badge sits under the avatar instead of absolute at bottom */
+  .availability-badge {
+    position: static;
+    transform: none;
+    font-size: 9.5px;
+    padding: 3px 8px;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-flex;
+  }
+
+  .doctor-info { padding: 12px 14px; min-width: 0; }
+
+  .doctor-header {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .doctor-info h3 { font-size: 15px; }
+  .doctor-rating { font-size: 11px; padding: 2px 5px; }
+  .specialty { font-size: 12.5px; }
+  .qualification { font-size: 11.5px; margin-bottom: 10px; }
+
+  .doctor-meta {
+    gap: 4px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  }
+  .doctor-meta span { font-size: 11px; }
+
+  .doctor-bottom {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .fee strong { font-size: 15px; }
+  .book-btn {
+    padding: 7px 12px;
+    font-size: 11.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Pagination — same look, tighter */
+  .dny-pagination { gap: 8px; margin-top: 24px; padding-top: 18px; }
+  .dny-page-btn { padding: 7px 10px; font-size: 12px; }
+  .dny-page-num { min-width: 32px; height: 32px; font-size: 12.5px; }
+  .dny-page-ellipsis { min-width: 18px; height: 32px; font-size: 13px; }
+}
+
+/* ============================================================
+   Responsive — Extra-small devices (≤400px)
+   Keep the same layout, just tighten the card further
+   ============================================================ */
+@media (max-width: 400px) {
+  .near-section .container { padding: 0 12px; }
+
+  .doctor-card { min-height: 138px; }
+  .doctor-image {
+    width: 96px;
+    padding: 10px 6px;
+  }
+  .doctor-image img { width: 56px; height: 56px; }
+  .availability-badge { font-size: 9px; padding: 2px 6px; }
+
+  .doctor-info { padding: 10px 12px; }
+  .doctor-info h3 { font-size: 14px; }
+  .doctor-rating { font-size: 10.5px; }
+  .specialty { font-size: 12px; }
+  .qualification { font-size: 11px; }
+  .doctor-meta span { font-size: 10.5px; }
+
+  .fee strong { font-size: 14px; }
+  .book-btn { padding: 6px 10px; font-size: 11px; }
+
+  .dny-page-btn { padding: 6px 8px; font-size: 11.5px; }
+  .dny-page-num { min-width: 30px; height: 30px; font-size: 12px; }
+}
+
+/* ============================================================
+   Reduced motion — guarantee visible content, no flash
+   ============================================================ */
 @media (prefers-reduced-motion: reduce) {
-  .near-section *, .near-section *::before, .near-section *::after {
+  .near-section *,
+  .near-section *::before,
+  .near-section *::after {
     animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+
+  /* Skeletons: replace shimmer with a calm static tone */
+  .skeleton-image,
+  .skeleton-line {
+    background: #eef2f6;
+    animation: none !important;
+  }
+
+  /* Kill the pulsing status dot ring (still visible as solid dot) */
+  .is-available .status-dot { animation: none !important; box-shadow: none !important; }
 }

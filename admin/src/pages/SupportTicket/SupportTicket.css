@@ -1,0 +1,702 @@
+/* =========================================
+   PAGE
+========================================= */
+
+.support-page {
+  min-height: 100vh;
+  width: 100%;
+
+  background: #f8fafc;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 25px;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================
+   MAIN CONTAINER
+========================================= */
+
+.support-container {
+  width: 1100px;
+  max-width: 100%;
+
+  min-height: 650px;
+
+  display: grid;
+  grid-template-columns: 60% 40%;
+
+  overflow: hidden;
+
+  border-radius: 20px;
+
+  background: #0f766e;
+
+  box-shadow:
+    0 20px 50px rgba(15, 118, 110, 0.12);
+}
+
+
+/* =========================================
+   LEFT FORM
+========================================= */
+
+.support-form-section {
+  position: relative;
+
+  z-index: 2;
+
+  padding: 45px 60px;
+
+  background: #f8fafc;
+
+  border-radius:
+    20px
+    130px
+    130px
+    20px;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================
+   BRAND
+========================================= */
+
+.support-brand {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 20px;
+}
+
+
+.support-brand h3 {
+  margin: 0;
+
+  font-size: 21px;
+
+  font-weight: 800;
+
+  color: #0f766e;
+}
+
+
+.support-brand-icon {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  color: #0f766e;
+
+  background: #f8fafc;
+
+  border: 1px solid #0f766e;
+}
+
+
+/* =========================================
+   BACK LINK
+========================================= */
+
+.support-back {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  margin-bottom: 18px;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  color: #0f766e;
+
+  text-decoration: none;
+
+  transition: 0.2s ease;
+}
+
+
+.support-back:hover {
+  text-decoration: underline;
+}
+
+
+/* =========================================
+   HEADING
+========================================= */
+
+.support-welcome {
+  margin: 0 0 8px;
+
+  font-size: 14px;
+
+  color: #64748b;
+}
+
+
+.support-form-section h1 {
+  margin: 0 0 10px;
+
+  font-size: 32px;
+
+  line-height: 1.1;
+
+  font-weight: 800;
+
+  color: #0f766e;
+}
+
+
+.support-subtitle {
+  margin: 0 0 22px;
+
+  font-size: 13px;
+
+  line-height: 1.6;
+
+  color: #64748b;
+}
+
+
+/* =========================================
+   FORM
+========================================= */
+
+.support-form {
+  width: 100%;
+
+  max-width: 560px;
+}
+
+
+.support-row {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 14px;
+}
+
+
+.support-form-group {
+  margin-bottom: 16px;
+}
+
+
+.support-form-group label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.3px;
+
+  color: #64748b;
+}
+
+
+.support-form-group input,
+.support-form-group select,
+.support-form-group textarea {
+  width: 100%;
+
+  padding: 12px 14px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #64748b;
+
+  border-radius: 8px;
+
+  outline: none;
+
+  background: #f8fafc;
+
+  color: #334155;
+
+  font-size: 14px;
+
+  font-family: inherit;
+
+  transition: 0.2s ease;
+}
+
+
+.support-form-group input {
+  height: 47px;
+}
+
+
+.support-form-group select {
+  height: 47px;
+
+  cursor: pointer;
+}
+
+
+.support-form-group textarea {
+  resize: vertical;
+
+  min-height: 120px;
+}
+
+
+.support-form-group input::placeholder,
+.support-form-group textarea::placeholder {
+  color: #64748b;
+
+  opacity: 0.7;
+}
+
+
+.support-form-group input:focus,
+.support-form-group select:focus,
+.support-form-group textarea:focus {
+  border-color: #0f766e;
+
+  box-shadow:
+    0 0 0 2px rgba(15, 118, 110, 0.08);
+}
+
+
+.support-char-count {
+  display: block;
+
+  margin-top: 4px;
+
+  text-align: right;
+
+  font-size: 11px;
+
+  color: #64748b;
+}
+
+
+/* Honeypot — visually hidden, still submitted */
+.support-honeypot {
+  position: absolute !important;
+
+  left: -9999px !important;
+
+  width: 1px !important;
+
+  height: 1px !important;
+
+  opacity: 0 !important;
+
+  pointer-events: none !important;
+}
+
+
+/* =========================================
+   BUTTON
+========================================= */
+
+.support-button {
+  width: 100%;
+
+  height: 47px;
+
+  margin-top: 6px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  background: #0f766e;
+
+  color: #f8fafc;
+
+  font-size: 14px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.3px;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+
+.support-button:hover {
+  opacity: 0.9;
+
+  transform: translateY(-1px);
+}
+
+
+.support-button:active {
+  transform: translateY(0);
+}
+
+
+.support-button:disabled {
+  opacity: 0.7;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   ERROR / SUCCESS
+========================================= */
+
+.support-error {
+  margin: 14px 0;
+
+  padding: 12px 14px;
+
+  border: 1px solid #fecaca;
+
+  border-radius: 8px;
+
+  background: #fef2f2;
+
+  color: #b91c1c;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+
+.support-success {
+  text-align: center;
+
+  padding: 25px 10px;
+}
+
+
+.support-success-icon {
+  color: #0f766e;
+
+  margin-bottom: 8px;
+}
+
+
+.support-success h2 {
+  margin: 0 0 8px;
+
+  font-size: 22px;
+
+  color: #0f766e;
+}
+
+
+.support-success p {
+  margin: 0 0 20px;
+
+  font-size: 13px;
+
+  line-height: 1.7;
+
+  color: #64748b;
+}
+
+
+/* =========================================
+   HELP FOOTER
+========================================= */
+
+.support-help-section {
+  margin-top: 22px;
+
+  padding-top: 18px;
+
+  border-top: 1px solid #e5e7eb;
+
+  text-align: center;
+}
+
+
+.support-help-section .help-text {
+  color: #64748b;
+
+  font-size: 14px;
+
+  margin-bottom: 10px;
+}
+
+
+.support-note {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  color: #0f766e;
+
+  font-size: 13px;
+
+  font-weight: 600;
+}
+
+
+/* =========================================
+   RIGHT SIDE
+========================================= */
+
+.support-info-section {
+  position: relative;
+
+  margin-left: -45px;
+
+  padding:
+    65px
+    35px
+    40px
+    85px;
+
+  overflow: hidden;
+
+  background: #0f766e;
+
+  color: #f8fafc;
+
+  box-sizing: border-box;
+}
+
+
+.support-info-content {
+  position: relative;
+
+  z-index: 3;
+
+  max-width: 420px;
+}
+
+
+.support-info-content h2 {
+  margin: 0 0 18px;
+
+  font-size: 25px;
+
+  line-height: 1.2;
+
+  font-weight: 800;
+
+  color: #f8fafc;
+}
+
+
+.support-info-content p {
+  margin: 0;
+
+  font-size: 13px;
+
+  line-height: 1.8;
+
+  color: #f8fafc;
+}
+
+
+.support-info-content h3 {
+  margin: 24px 0 13px;
+
+  font-size: 17px;
+
+  font-weight: 800;
+
+  color: #f8fafc;
+}
+
+
+.support-info-content ul {
+  margin: 0;
+
+  padding-left: 18px;
+}
+
+
+.support-info-content li {
+  margin-bottom: 12px;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+
+  color: #f8fafc;
+}
+
+
+/* =========================================
+   DECORATIVE MOUNTAINS
+========================================= */
+
+.support-mountains {
+  position: absolute;
+
+  left: 45px;
+  right: 0;
+
+  bottom: 35px;
+
+  height: 75px;
+
+  border-top:
+    1px solid
+    rgba(248, 250, 252, 0.25);
+
+  z-index: 2;
+}
+
+
+.support-mountain {
+  position: absolute;
+
+  bottom: 0;
+
+  width: 0;
+  height: 0;
+
+  border-left: 13px solid transparent;
+
+  border-right: 13px solid transparent;
+
+  border-bottom:
+    60px solid
+    rgba(248, 250, 252, 0.12);
+}
+
+
+.support-mountain-one {
+  left: 5%;
+
+  border-bottom-width: 35px;
+}
+
+
+.support-mountain-two {
+  left: 40%;
+
+  border-bottom-width: 75px;
+}
+
+
+.support-mountain-three {
+  left: 75%;
+
+  border-bottom-width: 45px;
+}
+
+
+.support-mountain-four {
+  left: 88%;
+
+  border-bottom-width: 55px;
+}
+
+
+/* =========================================
+   RIGHT FOOTER
+========================================= */
+
+.support-info-footer {
+  position: absolute;
+
+  left: 60px;
+
+  bottom: 14px;
+
+  display: flex;
+
+  gap: 45px;
+
+  font-size: 12px;
+
+  color: #f8fafc;
+
+  z-index: 5;
+}
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 900px) {
+
+  .support-container {
+    width: 600px;
+
+    display: block;
+  }
+
+
+  .support-form-section {
+    border-radius: 20px;
+
+    padding: 40px 35px;
+  }
+
+
+  .support-info-section {
+    display: none;
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .support-page {
+    padding: 0;
+  }
+
+
+  .support-container {
+    width: 100%;
+
+    min-height: 100vh;
+
+    border-radius: 0;
+  }
+
+
+  .support-form-section {
+    min-height: 100vh;
+
+    padding: 30px 22px;
+
+    border-radius: 0;
+  }
+
+
+  .support-form-section h1 {
+    font-size: 26px;
+  }
+
+
+  .support-row {
+    grid-template-columns: 1fr;
+
+    gap: 0;
+  }
+
+}

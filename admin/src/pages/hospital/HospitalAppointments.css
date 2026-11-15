@@ -983,3 +983,71 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================
+   Write Prescription additions
+   ============================================================ */
+
+.ha-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Primary teal "Write Prescription" button */
+.ha-write-prescription-btn,
+.ha-prescribe-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border: 1px solid var(--primary, #0f766e);
+  border-radius: 9px;
+  background: var(--primary, #0f766e);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 12px -4px rgba(15, 118, 110, 0.35);
+  white-space: nowrap;
+}
+
+.ha-write-prescription-btn:hover,
+.ha-prescribe-btn:hover {
+  background: #115e59;
+  border-color: #115e59;
+  transform: translateY(-1px);
+}
+
+.ha-write-prescription-btn:disabled,
+.ha-prescribe-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* In modal, prescription button pushes to the left of status buttons */
+.ha-prescribe-btn {
+  margin-right: auto;
+}
+
+/* Row-level action cluster */
+.ha-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Accent variant of the view button (used as pill icon per row) */
+.ha-view-btn-accent {
+  color: var(--primary, #0f766e);
+  border-color: hsl(168 45% 82%);
+}
+
+.ha-view-btn-accent:hover {
+  background: hsl(168 45% 96%);
+  color: var(--primary, #0f766e);
+}

@@ -92,14 +92,13 @@ const CTASection = () => {
             viewport={{ once: true }}
             transition={{ delay: 0.45 }}
           >
-            <Link to="/doctors" className="cta-button">
+            <Link to="/find-doctors" className="cta-button">
               <span>Find a Doctor</span>
 
               <motion.span
                 className="cta-button-icon"
                 whileHover={{ x: 4 }}
               >
-                <ArrowRight size={18} />
               </motion.span>
             </Link>
           </motion.div>
@@ -149,5 +148,5 @@ const CTASection = () => {
     </section>
   );
 };
-
 export default CTASection;
+

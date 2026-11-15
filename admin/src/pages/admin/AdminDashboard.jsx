@@ -7,6 +7,7 @@ import {
 
 import api from "../../services/api";
 import StatCard from "../../components/dashboard/StatCard";
+import ConfirmDialog from "../../components/dashboard/ConfirmDialog";
 import "./AdminDashboard.css";
 
 const getErrorMessage = (error, fallback) => {
@@ -62,6 +63,43 @@ const getArray = (result, key) => {
 const getInitials = (name = "") =>
   name.split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]).join("").toUpperCase() || "?";
 
+/* ---------- Dialog text helpers ---------- */
+const getEntityLabel = (entity) =>
+  entity?.name || entity?.patient || entity?.hospitalName || "this item";
+
+const getDialogTitle = ({ action, type }) => {
+  if (!type || !action) return "";
+  const verb =
+    action === "approve" ? "Approve" :
+    action === "reject" ? "Reject" : "Delete";
+  const noun = type.charAt(0).toUpperCase() + type.slice(1);
+  return `${verb} ${noun}?`;
+};
+
+const getDialogMessage = ({ action, type, entity }) => {
+  if (!entity) return "";
+  const label = getEntityLabel(entity);
+  if (action === "approve") {
+    if (type === "appointment") {
+      return `You are about to confirm the appointment for "${label}". Both parties will be notified.`;
+    }
+    return `You are about to approve "${label}". They will be activated on the platform.`;
+  }
+  if (action === "reject") {
+    if (type === "appointment") {
+      return `You are about to cancel the appointment for "${label}". This action cannot be undone.`;
+    }
+    return `You are about to reject "${label}". This action cannot be undone and they will be notified.`;
+  }
+  return `You are about to delete "${label}". This action cannot be undone.`;
+};
+
+const getDialogConfirmLabel = ({ action, type }) => {
+  if (action === "approve") return type === "appointment" ? "Confirm Appointment" : "Approve";
+  if (action === "reject") return type === "appointment" ? "Cancel Appointment" : "Reject";
+  return "Delete";
+};
+
 const EMPTY_STATS = {
   totalHospitals: 0,
   pendingHospitals: 0,
@@ -95,6 +133,15 @@ function AdminDashboard() {
   const [updatingId, setUpdatingId] = useState(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+
+  // Generic dialog state — works for hospitals, doctors, appointments, etc.
+  const [dialog, setDialog] = useState({
+    open: false,
+    type: null,
+    action: null,
+    entity: null,
+    reason: "",
+  });
 
   const fetchDashboard = useCallback(async (options = {}) => {
     const silent = options.silent === true;
@@ -180,36 +227,83 @@ function AdminDashboard() {
 
   useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
-  const handleHospitalAction = async (hospital, status) => {
+  // ---- Step 1: open dialog (called by every button) ----
+  const requestAction = (type, action, entity) => {
     if (updatingId !== null) return;
+    setError("");
+    setNotice("");
+    setDialog({ open: true, type, action, entity, reason: "" });
+  };
 
-    let rejectionReason = "";
-    if (status === "Rejected") {
-      const reason = window.prompt("Enter the reason for rejecting this hospital:");
-      if (reason === null) return;
-      rejectionReason = reason.trim();
-      if (!rejectionReason) { setError("Rejection reason is required."); return; }
+  // ---- Step 2: close dialog ----
+  const cancelAction = () => {
+    if (updatingId !== null) return;
+    setDialog({ open: false, type: null, action: null, entity: null, reason: "" });
+  };
+
+  // ---- Step 3: run the real API call ----
+  const confirmAction = async () => {
+    const { type, action, entity, reason } = dialog;
+    if (!entity) return;
+
+    // Validation: reject/delete flows need a reason
+    if ((action === "reject" || action === "delete") && !reason.trim()) {
+      setError("A reason is required to proceed.");
+      return;
     }
 
-    const confirmed = window.confirm(
-      `Are you sure you want to ${status === "Verified" ? "approve" : "reject"} ${hospital.name}?`
-    );
-    if (!confirmed) return;
-
-    setUpdatingId(hospital.id);
+    setUpdatingId(entity.id);
     setError("");
     setNotice("");
 
     try {
-      const body = { status };
-      if (status === "Rejected") body.rejectionReason = rejectionReason;
-      const response = await api.patch(`/admin/hospitals/${hospital.id}/review`, body);
-      setPendingHospitals((prev) => prev.filter((item) => item.id !== hospital.id));
-      setNotice(response.data.message || `${hospital.name} reviewed successfully.`);
+      let response;
+
+      if (type === "hospital") {
+        const status = action === "approve" ? "Verified" : "Rejected";
+        const body = { status };
+        if (action === "reject") body.rejectionReason = reason.trim();
+        response = await api.patch(`/admin/hospitals/${entity.id}/review`, body);
+
+        setPendingHospitals((prev) => prev.filter((h) => h.id !== entity.id));
+      }
+
+      if (type === "doctor") {
+        const status = action === "approve" ? "Verified" : "Rejected";
+        const body = { status };
+        if (action === "reject") body.rejectionReason = reason.trim();
+        response = await api.patch(`/admin/doctors/${entity.id}/review`, body);
+
+        // If you later add a pendingDoctors list, filter it here:
+        // setPendingDoctors((prev) => prev.filter((d) => d.id !== entity.id));
+      }
+
+      if (type === "appointment") {
+        if (action === "approve") {
+          response = await api.patch(`/admin/appointments/${entity.id}/confirm`);
+        } else if (action === "reject") {
+          response = await api.patch(`/admin/appointments/${entity.id}/cancel`, {
+            reason: reason.trim(),
+          });
+        }
+        setAppointments((prev) =>
+          prev.map((a) =>
+            a.id === entity.id
+              ? { ...a, status: action === "approve" ? "Confirmed" : "Cancelled" }
+              : a
+          )
+        );
+      }
+
+      setNotice(
+        response?.data?.message ||
+        `${getEntityLabel(entity)} ${action === "approve" ? "approved" : "rejected"}.`
+      );
+      setDialog({ open: false, type: null, action: null, entity: null, reason: "" });
       await fetchDashboard({ silent: true });
     } catch (err) {
-      console.error("Hospital review error:", err.response?.data || err.message);
-      setError(getErrorMessage(err, "Unable to update hospital status."));
+      console.error(`${type} ${action} error:`, err.response?.data || err.message);
+      setError(getErrorMessage(err, `Unable to ${action} ${type}.`));
     } finally {
       setUpdatingId(null);
     }
@@ -354,18 +448,19 @@ function AdminDashboard() {
                   <th>Doctor</th>
                   <th>Date &amp; Time</th>
                   <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   Array.from({ length: 4 }).map((_, i) => (
                     <tr key={i} className="dashboard-skeleton-row">
-                      <td colSpan="4"><div className="dashboard-skeleton-line" /></td>
+                      <td colSpan="5"><div className="dashboard-skeleton-line" /></td>
                     </tr>
                   ))
                 ) : appointments.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="dashboard-empty-cell">
+                    <td colSpan="5" className="dashboard-empty-cell">
                       <div className="dashboard-empty">
                         <CalendarDays size={26} />
                         <p>No appointments yet</p>
@@ -374,32 +469,64 @@ function AdminDashboard() {
                     </td>
                   </tr>
                 ) : (
-                  appointments.map((appointment) => (
-                    <tr key={appointment.id}>
-                      <td>
-                        <div className="dashboard-user-cell">
-                          <span className="dashboard-user-avatar">
-                            {getInitials(appointment.patient)}
+                  appointments.map((appointment) => {
+                    const st = appointment.status.toLowerCase();
+                    const canConfirm = st === "pending";
+                    const canCancel = st === "pending" || st === "confirmed";
+                    return (
+                      <tr key={appointment.id}>
+                        <td>
+                          <div className="dashboard-user-cell">
+                            <span className="dashboard-user-avatar">
+                              {getInitials(appointment.patient)}
+                            </span>
+                            <strong>{appointment.patient}</strong>
+                          </div>
+                        </td>
+                        <td>
+                          <strong>{appointment.doctor}</strong>
+                        </td>
+                        <td>
+                          <div className="dashboard-date-cell">
+                            <strong>{formatDate(appointment.date)}</strong>
+                            <small><Clock size={10} /> {appointment.time}</small>
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`appointment-status ${st}`}>
+                            {appointment.status}
                           </span>
-                          <strong>{appointment.patient}</strong>
-                        </div>
-                      </td>
-                      <td>
-                        <strong>{appointment.doctor}</strong>
-                      </td>
-                      <td>
-                        <div className="dashboard-date-cell">
-                          <strong>{formatDate(appointment.date)}</strong>
-                          <small><Clock size={10} /> {appointment.time}</small>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`appointment-status ${appointment.status.toLowerCase()}`}>
-                          {appointment.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td>
+                          <div className="hospital-actions">
+                            <button
+                              type="button"
+                              className="approve-btn"
+                              title="Confirm appointment"
+                              aria-label={`Confirm appointment for ${appointment.patient}`}
+                              disabled={updatingId !== null || !canConfirm}
+                              onClick={() => requestAction("appointment", "approve", appointment)}
+                            >
+                              <CheckCircle size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              className="reject-btn"
+                              title="Cancel appointment"
+                              aria-label={`Cancel appointment for ${appointment.patient}`}
+                              disabled={updatingId !== null || !canCancel}
+                              onClick={() => requestAction("appointment", "reject", appointment)}
+                            >
+                              <XCircle size={15} />
+                            </button>
+                            {updatingId === appointment.id && (
+                              <RefreshCw size={13} className="dashboard-spin hospital-saving" />
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -455,7 +582,7 @@ function AdminDashboard() {
                       title="Approve"
                       aria-label={`Approve ${hospital.name}`}
                       disabled={updatingId !== null}
-                      onClick={() => handleHospitalAction(hospital, "Verified")}
+                      onClick={() => requestAction("hospital", "approve", hospital)}
                     >
                       <CheckCircle size={16} />
                     </button>
@@ -466,7 +593,7 @@ function AdminDashboard() {
                       title="Reject"
                       aria-label={`Reject ${hospital.name}`}
                       disabled={updatingId !== null}
-                      onClick={() => handleHospitalAction(hospital, "Rejected")}
+                      onClick={() => requestAction("hospital", "reject", hospital)}
                     >
                       <XCircle size={16} />
                     </button>
@@ -481,6 +608,40 @@ function AdminDashboard() {
           </div>
         </section>
       </div>
+
+      {/* ---------- Unified confirmation dialog for ALL actions ---------- */}
+      <ConfirmDialog
+        open={dialog.open}
+        variant={
+          dialog.action === "approve"
+            ? "success"
+            : dialog.action === "reject" || dialog.action === "delete"
+            ? "danger"
+            : "default"
+        }
+        title={getDialogTitle(dialog)}
+        message={getDialogMessage(dialog)}
+        confirmLabel={getDialogConfirmLabel(dialog)}
+        cancelLabel="Cancel"
+        loading={updatingId !== null}
+        onConfirm={confirmAction}
+        onCancel={cancelAction}
+      >
+        {(dialog.action === "reject" || dialog.action === "delete") && (
+          <label>
+            Reason <span style={{ color: "hsl(0 72% 46%)" }}>*</span>
+            <textarea
+              value={dialog.reason}
+              onChange={(e) => setDialog((d) => ({ ...d, reason: e.target.value }))}
+              placeholder={`Explain why you are ${
+                dialog.action === "delete" ? "deleting" : "rejecting"
+              } this ${dialog.type}…`}
+              disabled={updatingId !== null}
+              autoFocus
+            />
+          </label>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }

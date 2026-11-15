@@ -1,9 +1,11 @@
-
 const express = require("express");
-const { SignUp } = require("../controllers/usersController");
+const { getDashboardData,getMyAppointments ,getMyPrescriptions} = require("../controllers/userController");
+const { authenticate } = require("../middleware/authMiddleware"); // adjust casing if needed
 
 const router = express.Router();
 
-router.post("/signup", SignUp);
+router.get("/dashboard", authenticate, getDashboardData);
+router.get("/appointments", authenticate, getMyAppointments);
+router.get("/prescriptions", authenticate, getMyPrescriptions);
 
 module.exports = router;

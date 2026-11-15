@@ -2,19 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Heart, Brain, Eye, Bone, Baby, Stethoscope, Pill, Activity,
-  ArrowRight, Ear, Syringe, Scan, HelpCircle, Cross
+  ArrowRight, Ear, Syringe, Scan, HelpCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
 import "./SpecialtiesSection.css";
 
-// The exact specialties used in your database
 const SPECIALTY_NAMES = [
   "General Medicine", "Cardiology", "Dermatology", "Dentistry", "Neurology",
   "Orthopedics", "Pediatrics", "Gynecology", "Ophthalmology", "Oncology",
   "Psychiatry", "Urology", "ENT", "Radiology", "Other",
 ];
 
-// Map icon to each specific specialty name
 const ICON_MAP = {
   "General Medicine": Stethoscope,
   "Cardiology": Heart,
@@ -41,7 +39,6 @@ const SpecialtiesSection = () => {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch real doctors data
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
@@ -59,10 +56,8 @@ const SpecialtiesSection = () => {
     fetchDoctors();
   }, []);
 
-  // Build dynamic list with exact counts from the doctors array
   const specialtiesWithCounts = useMemo(() => {
     return SPECIALTY_NAMES.map((name) => {
-      // Count doctors whose specialty matches exactly (ignoring case)
       const count = doctors.filter((doc) => {
         if (!doc.specialty) return false;
         return doc.specialty.trim().toLowerCase() === name.toLowerCase();
@@ -77,14 +72,12 @@ const SpecialtiesSection = () => {
   }, [doctors]);
 
   const handleCardClick = (specialtyName) => {
-    // Navigate to FindDoctors page and pass specialty as a query parameter
     navigate(`/find-doctors?specialty=${encodeURIComponent(specialtyName)}`);
   };
 
   return (
     <section id="specialties" className="specialties-section">
       <div className="specialties-container">
-        {/* Header */}
         <motion.div
           className="specialties-header"
           initial={{ opacity: 0, y: 30 }}
@@ -93,6 +86,7 @@ const SpecialtiesSection = () => {
           transition={{ duration: 0.6 }}
         >
           <div className="specialties-heading">
+            <span className="specialties-label">EXPLORE CARE</span>
             <h2>
               Browse by <span>Specialty</span>
             </h2>
@@ -112,7 +106,6 @@ const SpecialtiesSection = () => {
           </motion.button>
         </motion.div>
 
-        {/* Grid */}
         <div className="specialties-grid">
           {specialtiesWithCounts.map((spec, index) => {
             const Icon = spec.icon;
@@ -128,12 +121,10 @@ const SpecialtiesSection = () => {
                 transition={{ duration: 0.5, delay: index * 0.07 }}
                 whileHover={{ y: -7, transition: { duration: 0.25 } }}
               >
-                {/* Number */}
                 <span className="specialty-number">
                   {String(index + 1).padStart(2, "0")}
                 </span>
 
-                {/* Icon */}
                 <motion.div
                   className="specialty-icon"
                   whileHover={{ scale: 1.1, rotate: -6 }}
@@ -142,7 +133,6 @@ const SpecialtiesSection = () => {
                   <Icon size={24} strokeWidth={1.8} />
                 </motion.div>
 
-                {/* Content */}
                 <div className="specialty-content">
                   <h3>{spec.name}</h3>
                   {loading ? (
@@ -154,7 +144,6 @@ const SpecialtiesSection = () => {
                   )}
                 </div>
 
-                {/* Arrow */}
                 <motion.div className="specialty-arrow" whileHover={{ x: 4 }}>
                   <ArrowRight size={17} />
                 </motion.div>

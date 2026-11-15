@@ -53,7 +53,7 @@ const HowItWorks = () => {
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6 }}
         >
-
+          <span className="how-label">SIMPLE PROCESS</span>
           <h2>
             How <span>NearbyDoctor</span> Works
           </h2>
@@ -100,7 +100,6 @@ const HowItWorks = () => {
                   delay: index * 0.15,
                 }}
               >
-
                 <motion.div
                   className="how-step"
                   whileHover={{
@@ -108,50 +107,32 @@ const HowItWorks = () => {
                     transition: { duration: 0.25 },
                   }}
                 >
-
-                  {/* Number */}
                   <motion.div
                     className="step-number"
-                    whileHover={{
-                      scale: 1.1,
-                      rotate: 5,
-                    }}
+                    whileHover={{ scale: 1.1, rotate: 5 }}
                   >
                     {step.number}
                   </motion.div>
 
-                  {/* Icon */}
                   <motion.div
                     className="step-icon"
-                    whileHover={{
-                      scale: 1.12,
-                      rotate: -5,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 300,
-                    }}
+                    whileHover={{ scale: 1.12, rotate: -5 }}
+                    transition={{ type: "spring", stiffness: 300 }}
                   >
                     <Icon size={27} strokeWidth={1.8} />
                   </motion.div>
 
-                  {/* Content */}
                   <h3>{step.title}</h3>
-
                   <p>{step.description}</p>
 
-                  {/* Bottom */}
                   <div className="step-footer">
                     <span>
                       Step {index + 1} of {steps.length}
                     </span>
-
                     <CheckCircle2 size={16} />
                   </div>
-
                 </motion.div>
 
-                {/* Connector */}
                 {index < steps.length - 1 && (
                   <motion.div
                     className="step-connector"
@@ -166,7 +147,6 @@ const HowItWorks = () => {
                     <ArrowRight size={19} />
                   </motion.div>
                 )}
-
               </motion.div>
             );
           })}
@@ -190,7 +170,6 @@ const HowItWorks = () => {
             whileTap={{ scale: 0.97 }}
           >
             Find a Doctor
-            <ArrowRight size={17} />
           </motion.button>
         </motion.div>
 

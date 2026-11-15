@@ -16,7 +16,7 @@ const {
 router.get(
   "/",
   authenticate,
-  allowRoles("super_admin", "admin"),
+  allowRoles("super_admin", "hospital_admin"),
   getAllAppointments
 );
 
@@ -24,7 +24,7 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  allowRoles("super_admin", "admin"),
+  allowRoles("super_admin", "hospital_admin"),
   getAppointmentById
 );
 
@@ -32,7 +32,7 @@ router.get(
 router.patch(
   "/:id/status",
   authenticate,
-  allowRoles("super_admin", "admin"),
+  allowRoles("super_admin", "hospital_admin"),
   updateAppointmentStatus
 );
 
@@ -40,7 +40,7 @@ router.patch(
 router.patch(
   "/:id/cancel",
   authenticate,
-  allowRoles("super_admin", "admin"),
+  allowRoles("super_admin", "hospital_admin"),
   cancelAppointment
 );
 

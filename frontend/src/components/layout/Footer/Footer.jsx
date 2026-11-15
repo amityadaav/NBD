@@ -7,6 +7,7 @@ import {
   Twitter,
   Linkedin,
   ArrowUpRight,
+  Stethoscope,
 } from "lucide-react";
 
 import "./Footer.css";
@@ -22,7 +23,7 @@ const Footer = () => {
         <div className="footer-brand">
           <a href="/" className="footer-logo">
             <div className="footer-logo-icon">
-              <MapPin size={21} strokeWidth={2.5} />
+              <Stethoscope size={20} strokeWidth={2.4} />
             </div>
 
             <span>
