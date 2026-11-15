@@ -1,21 +1,28 @@
+// src/pages/Doctors/DoctorProfile.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   MapPin, Star, Clock, Building2, BriefcaseMedical, GraduationCap,
   IndianRupee, CalendarDays, Video, CheckCircle2, ArrowLeft, ArrowRight,
   Stethoscope, Award, Languages, RefreshCw, AlertCircle, Phone, Mail,
-  ChevronLeft, ChevronRight, ShieldCheck,
+  ShieldCheck,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import "./DoctorProfile.css";
 
+/* ------------------------------------------------------------------ */
+/*  API config                                                         */
+/* ------------------------------------------------------------------ */
 const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
 const API_ORIGIN = API_URL.replace(/\/api$/, "");
-const DOCTORS_ENDPOINT = `${API_URL.endsWith("/api") ? API_URL : `${API_URL}/api`}/doctors`;
-const HOSPITALS_ENDPOINT = `${API_URL.endsWith("/api") ? API_URL : `${API_URL}/api`}/hospitals`;
+const API_BASE = API_URL.endsWith("/api") ? API_URL : `${API_URL}/api`;
+const DOCTORS_ENDPOINT = `${API_BASE}/doctors`;
+const HOSPITALS_ENDPOINT = `${API_BASE}/hospitals`;
+const FETCH_TIMEOUT = 90000; // 90s — Render cold start
 
-/* ---------- helpers ---------- */
-
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
 function getImageUrl(path) {
   if (!path) return "";
   if (/^https?:\/\//i.test(path)) return path;
@@ -55,7 +62,6 @@ function getHospitalAddress(hospital) {
   return hospital.city || "";
 }
 
-/* stable pseudo-rating so it doesn't flicker on re-render */
 function seededRating(id) {
   if (!id) return { rating: 4.5, reviews: 50 };
   let h = 0;
@@ -67,9 +73,32 @@ function seededRating(id) {
   };
 }
 
-/* split availability days */
+async function fetchJson(url, signal, ms = FETCH_TIMEOUT) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+
+  // Link outer abort signal (component unmount) to inner one
+  const onAbort = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", onAbort);
+  }
+
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  } finally {
+    clearTimeout(timer);
+    if (signal) signal.removeEventListener("abort", onAbort);
+  }
+}
+
 const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 const DoctorProfile = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -81,10 +110,9 @@ const DoctorProfile = () => {
   const [error, setError] = useState("");
 
   /* ---------- fetch ---------- */
-
   useEffect(() => {
     if (!id) return;
-    if (location.state?.doctor) return; // already supplied by navigation state
+    if (location.state?.doctor) return; // navigation state already has it
 
     const controller = new AbortController();
 
@@ -93,38 +121,45 @@ const DoctorProfile = () => {
         setLoading(true);
         setError("");
 
-        const response = await fetch(`${DOCTORS_ENDPOINT}/${id}`, {
-          signal: controller.signal,
-        });
+        const doctorRes = await fetchJson(`${DOCTORS_ENDPOINT}/${id}`, controller.signal);
 
-        if (!response.ok) throw new Error("Doctor not found");
+        if (!doctorRes.ok) {
+          throw new Error(
+            doctorRes.status === 404
+              ? "Doctor not found"
+              : doctorRes.data?.message || "Failed to load doctor"
+          );
+        }
 
-        const result = await response.json();
-        const data = result.doctor || result;
+        const data = doctorRes.data.doctor || doctorRes.data;
+        if (!data?._id && !data?.name) {
+          throw new Error("Doctor data is invalid");
+        }
         setDoctor(data);
 
-        // If hospitalId is just an ID string, fetch hospital details
-        const hId = typeof data.hospitalId === "object" ? data.hospitalId?._id : data.hospitalId;
+        // Fetch hospital if only an ID was embedded
+        const hId =
+          typeof data.hospitalId === "object" ? data.hospitalId?._id : data.hospitalId;
+
         if (hId && typeof data.hospitalId !== "object") {
           try {
-            const hRes = await fetch(`${HOSPITALS_ENDPOINT}/${hId}`, {
-              signal: controller.signal,
-            });
+            const hRes = await fetchJson(`${HOSPITALS_ENDPOINT}/${hId}`, controller.signal);
             if (hRes.ok) {
-              const hResult = await hRes.json();
-              setHospital(hResult.hospital || hResult);
+              setHospital(hRes.data.hospital || hRes.data);
             }
           } catch {
-            /* hospital optional */
+            /* hospital is optional — ignore */
           }
         } else if (typeof data.hospitalId === "object") {
           setHospital(data.hospitalId);
         }
       } catch (err) {
-        if (err.name !== "AbortError") {
-          console.error("Doctor fetch error:", err);
-          setError(err.message || "Unable to load doctor profile.");
-        }
+        if (err.name === "AbortError") return;
+        setError(
+          err.message === "Failed to fetch"
+            ? "Can't reach the server. Check your connection."
+            : err.message || "Unable to load doctor profile."
+        );
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -135,7 +170,6 @@ const DoctorProfile = () => {
   }, [id, location.state?.doctor]);
 
   /* ---------- derived ---------- */
-
   const { rating, reviews } = useMemo(
     () => seededRating(doctor?._id || id),
     [doctor?._id, id]
@@ -155,7 +189,6 @@ const DoctorProfile = () => {
   );
 
   /* ---------- handlers ---------- */
-
   const handleBook = () => {
     const hospitalId =
       typeof doctor.hospitalId === "object" ? doctor.hospitalId?._id : doctor.hospitalId;
@@ -169,8 +202,7 @@ const DoctorProfile = () => {
     });
   };
 
-  /* ---------- states ---------- */
-
+  /* ---------- loading ---------- */
   if (loading) {
     return (
       <div className="dp-container">
@@ -185,6 +217,7 @@ const DoctorProfile = () => {
     );
   }
 
+  /* ---------- error ---------- */
   if (error || !doctor) {
     return (
       <div className="dp-container">
@@ -194,7 +227,7 @@ const DoctorProfile = () => {
             <h2>Doctor not found</h2>
             <p>{error || "We couldn't locate this doctor's profile."}</p>
             <div className="dp-error-actions">
-              <button onClick={() => window.location.reload()} className="dp-btn-secondary">
+              <button onClick={() => navigate(0)} className="dp-btn-secondary">
                 <RefreshCw size={15} /> Retry
               </button>
               <button onClick={() => navigate("/find-doctors")} className="dp-btn-primary">
@@ -208,12 +241,9 @@ const DoctorProfile = () => {
   }
 
   /* ---------- render ---------- */
-
   return (
     <div className="dp-container">
       <div className="dp-inner">
-
-        {/* Back link */}
         <button className="dp-back" onClick={() => navigate(-1)} type="button">
           <ArrowLeft size={16} /> Back
         </button>
@@ -228,7 +258,6 @@ const DoctorProfile = () => {
           <div className="dp-hero-bg" aria-hidden="true" />
 
           <div className="dp-hero-inner">
-            {/* Avatar */}
             <div className="dp-avatar-wrap">
               <div className="dp-avatar">
                 {doctor.profileImage ? (
@@ -251,7 +280,6 @@ const DoctorProfile = () => {
               </span>
             </div>
 
-            {/* Info */}
             <div className="dp-hero-info">
               <div className="dp-hero-top">
                 <div>
@@ -294,13 +322,8 @@ const DoctorProfile = () => {
                 )}
               </div>
 
-              {/* CTAs */}
               <div className="dp-hero-actions">
-                <button
-                  type="button"
-                  className="dp-btn-primary"
-                  onClick={handleBook}
-                >
+                <button type="button" className="dp-btn-primary" onClick={handleBook}>
                   <CalendarDays size={16} /> Book Appointment
                 </button>
 
@@ -322,10 +345,7 @@ const DoctorProfile = () => {
 
         {/* LAYOUT */}
         <div className="dp-layout">
-          {/* MAIN */}
           <div className="dp-main">
-
-            {/* About */}
             {doctor.bio && (
               <motion.section
                 className="dp-card"
@@ -339,7 +359,6 @@ const DoctorProfile = () => {
               </motion.section>
             )}
 
-            {/* Specialties */}
             {Array.isArray(doctor.specialties) && doctor.specialties.length > 0 && (
               <motion.section
                 className="dp-card"
@@ -359,7 +378,6 @@ const DoctorProfile = () => {
               </motion.section>
             )}
 
-            {/* Hospital */}
             {hospital && (
               <motion.section
                 className="dp-card"
@@ -380,9 +398,7 @@ const DoctorProfile = () => {
                         <MapPin size={13} /> {getHospitalAddress(hospital)}
                       </span>
                     )}
-                    {hospital.hospitalType && (
-                      <small>{hospital.hospitalType}</small>
-                    )}
+                    {hospital.hospitalType && <small>{hospital.hospitalType}</small>}
                   </div>
                   {hospital._id && (
                     <button
@@ -397,7 +413,6 @@ const DoctorProfile = () => {
               </motion.section>
             )}
 
-            {/* Availability */}
             <motion.section
               className="dp-card"
               initial={{ opacity: 0, y: 20 }}
@@ -412,10 +427,7 @@ const DoctorProfile = () => {
                   {WEEK_DAYS.map((day) => {
                     const active = availableDays.includes(day);
                     return (
-                      <div
-                        key={day}
-                        className={`dp-day ${active ? "is-active" : ""}`}
-                      >
+                      <div key={day} className={`dp-day ${active ? "is-active" : ""}`}>
                         <span className="dp-day-short">{day.slice(0, 3)}</span>
                         <span className="dp-day-full">{day}</span>
                         {active ? <CheckCircle2 size={14} /> : null}
@@ -435,10 +447,7 @@ const DoctorProfile = () => {
             </motion.section>
           </div>
 
-          {/* SIDEBAR */}
           <aside className="dp-sidebar">
-
-            {/* Fee card */}
             <motion.div
               className="dp-card dp-fee-card"
               initial={{ opacity: 0, y: 20 }}
@@ -463,7 +472,6 @@ const DoctorProfile = () => {
               </button>
             </motion.div>
 
-            {/* Languages */}
             {Array.isArray(doctor.languages) && doctor.languages.length > 0 && (
               <motion.div
                 className="dp-card"
@@ -477,15 +485,12 @@ const DoctorProfile = () => {
                 </h2>
                 <div className="dp-tags">
                   {doctor.languages.map((lang) => (
-                    <span key={lang} className="dp-tag">
-                      {lang}
-                    </span>
+                    <span key={lang} className="dp-tag">{lang}</span>
                   ))}
                 </div>
               </motion.div>
             )}
 
-            {/* Registration */}
             {doctor.registrationNumber && (
               <motion.div
                 className="dp-card"
@@ -495,7 +500,7 @@ const DoctorProfile = () => {
                 transition={{ duration: 0.5 }}
               >
                 <h2 className="dp-card-title">
-                  <BadgeCheckIcon /> Verified
+                  <CheckCircle2 size={16} /> Verified
                 </h2>
                 <p className="dp-reg">
                   Registration: <strong>{doctor.registrationNumber}</strong>
@@ -511,10 +516,5 @@ const DoctorProfile = () => {
     </div>
   );
 };
-
-/* small inline component for a badge check icon */
-function BadgeCheckIcon() {
-  return <CheckCircle2 size={16} />;
-}
 
 export default DoctorProfile;

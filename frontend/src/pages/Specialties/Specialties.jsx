@@ -1,3 +1,4 @@
+// src/pages/Specialties.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   HeartPulse, Brain, Eye, Bone, Baby, Stethoscope, Droplets, Smile,
@@ -7,27 +8,30 @@ import {
 import { useNavigate } from "react-router-dom";
 import "./Specialties.css";
 
-/* -----------------------------------------------------------
-   Specialty data.
-   `iconName` is a STRING so a real API can return it safely.
-   The component maps it to a lucide component below.
-   ----------------------------------------------------------- */
-const specialtiesData = [
-  { name: "Cardiology",       description: "Expert care for your heart and circulation.",      doctors: 24, iconName: "HeartPulse",    accent: "#e11d48" },
-  { name: "Neurology",        description: "Diagnosis and treatment of brain and nerve disorders.", doctors: 18, iconName: "Brain",         accent: "#7c3aed" },
-  { name: "Ophthalmology",    description: "Complete care for your eyes and vision.",          doctors: 16, iconName: "Eye",           accent: "#0284c7" },
-  { name: "Orthopedics",      description: "Care for bones, joints, muscles, and movement.",   doctors: 21, iconName: "Bone",          accent: "#ea580c" },
-  { name: "Pediatrics",       description: "Healthcare for infants, children, and adolescents.", doctors: 20, iconName: "Baby",         accent: "#db2777" },
-  { name: "General Medicine", description: "Everyday healthcare, checkups, and diagnosis.",    doctors: 32, iconName: "Stethoscope",   accent: "#0f766e" },
-  { name: "Dermatology",      description: "Expert care for skin, hair, and nail conditions.", doctors: 14, iconName: "Droplets",      accent: "#0891b2" },
-  { name: "Dentistry",        description: "Preventive and restorative dental care.",          doctors: 19, iconName: "Smile",         accent: "#2563eb" },
-  { name: "ENT",              description: "Care for ear, nose, and throat conditions.",       doctors: 12, iconName: "Ear",           accent: "#ca8a04" },
-  { name: "Gynecology",       description: "Women's reproductive and overall health.",         doctors: 17, iconName: "UserRound",     accent: "#c026d3" },
-  { name: "Oncology",         description: "Specialized evaluation and treatment of cancer.",  doctors: 9,  iconName: "Microscope",    accent: "#4f46e5" },
-  { name: "Endocrinology",    description: "Care for hormones, thyroid, and diabetes.",        doctors: 11, iconName: "FlaskConical",  accent: "#16a34a" },
+/* ------------------------------------------------------------------ */
+/*  API config                                                         */
+/* ------------------------------------------------------------------ */
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
+const API_BASE = API_URL.endsWith("/api") ? API_URL : `${API_URL}/api`;
+const DOCTORS_ENDPOINT = `${API_BASE}/doctors`;
+const FETCH_TIMEOUT = 90000;
+
+/* Base specialty catalog — descriptions + icons are design-time data. */
+const CATALOG = [
+  { name: "Cardiology",       description: "Expert care for your heart and circulation.",      iconName: "HeartPulse",    accent: "#e11d48" },
+  { name: "Neurology",        description: "Diagnosis and treatment of brain and nerve disorders.", iconName: "Brain",         accent: "#7c3aed" },
+  { name: "Ophthalmology",    description: "Complete care for your eyes and vision.",          iconName: "Eye",           accent: "#0284c7" },
+  { name: "Orthopedics",      description: "Care for bones, joints, muscles, and movement.",   iconName: "Bone",          accent: "#ea580c" },
+  { name: "Pediatrics",       description: "Healthcare for infants, children, and adolescents.", iconName: "Baby",         accent: "#db2777" },
+  { name: "General Medicine", description: "Everyday healthcare, checkups, and diagnosis.",    iconName: "Stethoscope",   accent: "#0f766e" },
+  { name: "Dermatology",      description: "Expert care for skin, hair, and nail conditions.", iconName: "Droplets",      accent: "#0891b2" },
+  { name: "Dentistry",        description: "Preventive and restorative dental care.",          iconName: "Smile",         accent: "#2563eb" },
+  { name: "ENT",              description: "Care for ear, nose, and throat conditions.",       iconName: "Ear",           accent: "#ca8a04" },
+  { name: "Gynecology",       description: "Women's reproductive and overall health.",         iconName: "UserRound",     accent: "#c026d3" },
+  { name: "Oncology",         description: "Specialized evaluation and treatment of cancer.",  iconName: "Microscope",    accent: "#4f46e5" },
+  { name: "Endocrinology",    description: "Care for hormones, thyroid, and diabetes.",        iconName: "FlaskConical",  accent: "#16a34a" },
 ];
 
-/* Map string names → lucide components */
 const ICONS = {
   HeartPulse, Brain, Eye, Bone, Baby, Stethoscope, Droplets, Smile,
   Ear, Microscope, FlaskConical, UserRound,
@@ -35,38 +39,74 @@ const ICONS = {
 
 const POPULAR = ["General Medicine", "Cardiology", "Pediatrics", "Dermatology"];
 
-/* Stub — swap for `fetch("/api/specialties").then(r => r.json())` later.
-   Return shape must match `specialtiesData` (with `iconName`, not `icon`). */
-function fetchSpecialties() {
-  return new Promise((resolve) =>
-    setTimeout(() => resolve(specialtiesData), 500)
-  );
+/* ------------------------------------------------------------------ */
+/*  Fetch doctors, count by specialty                                 */
+/* ------------------------------------------------------------------ */
+async function fetchSpecialties(signal) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  const onAbort = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", onAbort);
+  }
+
+  try {
+    const res = await fetch(DOCTORS_ENDPOINT, { signal: controller.signal });
+    if (!res.ok) throw new Error(`Failed to load doctors (${res.status})`);
+    const data = await res.json();
+    const doctors = Array.isArray(data) ? data : data.doctors || [];
+
+    // Count doctors per specialty (case-insensitive)
+    const counts = {};
+    for (const d of doctors) {
+      const s = String(d.specialty || "").trim().toLowerCase();
+      if (s) counts[s] = (counts[s] || 0) + 1;
+    }
+
+    return CATALOG.map((c) => ({
+      ...c,
+      doctors: counts[c.name.toLowerCase()] || 0,
+    }));
+  } finally {
+    clearTimeout(timer);
+    if (signal) signal.removeEventListener("abort", onAbort);
+  }
 }
 
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 function Specialties() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
-  const [specialties, setSpecialties] = useState([]);
+  const [specialties, setSpecialties] = useState(CATALOG.map((c) => ({ ...c, doctors: 0 })));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const searchRef = useRef(null);
   const navigate = useNavigate();
 
-  const load = () => {
+  const load = (signal) => {
     setLoading(true);
     setError(false);
-    fetchSpecialties()
+    fetchSpecialties(signal)
       .then(setSpecialties)
-      .catch(() => {
+      .catch((err) => {
+        if (err.name === "AbortError") return;
         setError(true);
-        setSpecialties(specialtiesData);
+        // Keep the catalog visible with 0 counts
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!signal?.aborted) setLoading(false);
+      });
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, []);
 
-  /* Press "/" to jump to search */
   useEffect(() => {
     const onKey = (e) => {
       const typing = ["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName);
@@ -96,12 +136,10 @@ function Specialties() {
     [specialties]
   );
 
-  /* ✅ Route matches the rest of the app: /find-doctors */
   const goToDoctors = (specialty) =>
     navigate(`/find-doctors?specialty=${encodeURIComponent(specialty)}`);
 
   return (
-    /* ✅ No nested <main> — MainLayout already provides one */
     <div className="sp-page">
       <div className="sp-inner">
         <section className="sp-hero">
@@ -167,14 +205,20 @@ function Specialties() {
             <div className="sp-floating-card sp-floating-top">
               <HeartPulse size={22} />
               <div>
-                <strong>{specialties.length || 12} specialties</strong>
+                <strong>
+                  {loading ? "…" : `${specialties.length} specialties`}
+                </strong>
                 <span>Expert care</span>
               </div>
             </div>
             <div className="sp-floating-card sp-floating-bottom">
               <UserRound size={22} />
               <div>
-                <strong>{totalDoctors ? `${totalDoctors}+ doctors` : "Find a Doctor"}</strong>
+                <strong>
+                  {loading ? "…" : totalDoctors > 0
+                    ? `${totalDoctors} doctors`
+                    : "Find a Doctor"}
+                </strong>
                 <span>Care made simpler</span>
               </div>
             </div>
@@ -206,8 +250,8 @@ function Specialties() {
           {error && (
             <div className="sp-error-banner" role="alert">
               <AlertCircle size={18} />
-              <span>We couldn't refresh the list, so you're seeing saved data.</span>
-              <button type="button" onClick={load}>
+              <span>Couldn't reach the server — showing saved catalog.</span>
+              <button type="button" onClick={() => load()}>
                 <RotateCw size={12} /> Retry
               </button>
             </div>
@@ -227,7 +271,6 @@ function Specialties() {
           ) : visible.length > 0 ? (
             <div className="sp-grid">
               {visible.map((specialty, index) => {
-                /* ✅ Safe icon lookup — never undefined */
                 const Icon = ICONS[specialty.iconName] || Stethoscope;
                 return (
                   <article
@@ -243,7 +286,10 @@ function Specialties() {
                         <Icon size={27} strokeWidth={1.8} />
                       </div>
                       <span className="sp-doctor-count">
-                        <Users size={12} /> {specialty.doctors} doctors
+                        <Users size={12} />{" "}
+                        {specialty.doctors > 0
+                          ? `${specialty.doctors} doctor${specialty.doctors === 1 ? "" : "s"}`
+                          : "No doctors yet"}
                       </span>
                     </div>
 

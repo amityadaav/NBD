@@ -420,3 +420,32 @@
     transition-duration: 0.001ms !important;
   }
 }
+/* ---------- Loading spinner ---------- */
+.hp-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 1rem;
+  min-height: 280px;
+}
+
+.hp-spinner {
+  color: var(--primary, #0f766e);
+  animation: hp-spin 1s linear infinite;
+}
+
+@keyframes hp-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.hp-loading__text {
+  margin: 0;
+  text-align: center;
+  color: var(--muted-foreground, #64748b);
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.95rem;
+  max-width: 360px;
+}

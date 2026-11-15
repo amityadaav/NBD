@@ -1,15 +1,20 @@
+// src/pages/Appointments/BookAppointment.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   CalendarDays, Clock3, MapPin, Stethoscope, UserRound, CheckCircle2,
   Video, Building2, ShieldCheck, ArrowRight, ChevronLeft, ChevronRight,
-  BadgeCheck, Sparkles, Info, Phone, Mail, Award
+  BadgeCheck, Sparkles, Info, Award
 } from "lucide-react";
 import { motion } from "framer-motion";
 import "./BookAppointment.css";
 
+/* ------------------------------------------------------------------ */
+/*  API config                                                         */
+/* ------------------------------------------------------------------ */
 const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
 const API_BASE = API_URL.endsWith("/api") ? API_URL : `${API_URL}/api`;
+const BOOK_TIMEOUT = 90000; // 90s — Render cold start
 
 const TIME_SLOTS = [
   "09:00 AM", "10:00 AM", "11:30 AM", "12:30 PM",
@@ -41,6 +46,32 @@ const getImageUrl = (path) => {
   return `${origin}/${String(path).replace(/^\/+/, "")}`;
 };
 
+/* ------------------------------------------------------------------ */
+/*  Fetch with timeout + abort                                         */
+/* ------------------------------------------------------------------ */
+async function postJSON(url, body, token, ms = BOOK_TIMEOUT) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 function BookAppointment() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -90,7 +121,6 @@ function BookAppointment() {
     image: getImageUrl(selectedDoctor?.profileImage || ""),
   };
 
-  // Pre-fill patient details from logged-in user
   const storedUser = getStoredUser();
 
   const [selectedDate, setSelectedDate] = useState("");
@@ -196,38 +226,42 @@ function BookAppointment() {
 
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/appointments/book`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${activeToken}`,
-        },
-        body: JSON.stringify(appointmentData),
-      });
-      const result = await response.json().catch(() => ({}));
+      const { ok, status, data } = await postJSON(
+        `${API_BASE}/appointments/book`,
+        appointmentData,
+        activeToken
+      );
 
-      if (response.status === 401) {
+      if (status === 401) {
         ["token", "user", "authToken"].forEach((key) => {
           localStorage.removeItem(key);
           sessionStorage.removeItem(key);
         });
         window.dispatchEvent(new Event("authChanged"));
-        navigate("/login", { replace: true, state: { message: "Your session expired. Please log in again." } });
+        navigate("/login", {
+          replace: true,
+          state: { message: "Your session expired. Please log in again." },
+        });
         return;
       }
 
-      if (!response.ok) {
-        const missing = result.missingFields?.length
-          ? ` Missing fields: ${result.missingFields.join(", ")}`
+      if (!ok) {
+        const missing = data.missingFields?.length
+          ? ` Missing fields: ${data.missingFields.join(", ")}`
           : "";
-        throw new Error((result.message || "Failed to book appointment.") + missing);
+        throw new Error((data.message || "Failed to book appointment.") + missing);
       }
 
-      setBookingId(result.appointment?._id || result.booking?._id || result._id || "");
+      setBookingId(data.appointment?._id || data.booking?._id || data._id || "");
       setShowConfirmation(true);
     } catch (error) {
-      console.error("Booking error:", error);
-      setBookingError(error.message || "Unable to connect to the server. Please try again.");
+      if (error.name === "AbortError") {
+        setBookingError("Server is waking up. Please try again in a moment.");
+      } else if (String(error.message).includes("Failed to fetch")) {
+        setBookingError("Can't reach the server. Check your connection and try again.");
+      } else {
+        setBookingError(error.message || "Unable to book appointment. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -281,53 +315,52 @@ function BookAppointment() {
       <div className="booking-layout">
         <section className="booking-main">
           {/* Doctor Card */}
-{/* Doctor Card */}
-<article className="doctor-card">
-  <div className="doctor-card-main">
-    <div className="doctor-avatar">
-      {doctor.image ? (
-        <img src={doctor.image} alt={doctor.name} />
-      ) : (
-        <UserRound size={36} />
-      )}
-    </div>
-    
-    <div className="doctor-info">
-      <span className="doctor-specialty-badge">{doctor.specialty}</span>
-      <h2>{doctor.name}</h2>
-      <p className="doctor-qualification">{doctor.qualification}</p>
-      
-      <div className="doctor-meta-row">
-        {doctor.experience > 0 && (
-          <span className="doctor-meta-item">
-            <Award size={14} /> {doctor.experience} yrs exp
-          </span>
-        )}
-        <span className="doctor-meta-item doctor-verified">
-          <BadgeCheck size={14} /> Verified Doctor
-        </span>
-      </div>
-      
-      {doctor.hospital && (
-        <div className="doctor-location">
-          <MapPin size={15} />
-          <span>
-            {doctor.hospital}
-            {doctor.address ? `, ${doctor.address}` : ""}
-          </span>
-        </div>
-      )}
-    </div>
-  </div>
+          <article className="doctor-card">
+            <div className="doctor-card-main">
+              <div className="doctor-avatar">
+                {doctor.image ? (
+                  <img src={doctor.image} alt={doctor.name} />
+                ) : (
+                  <UserRound size={36} />
+                )}
+              </div>
 
-  <div className="doctor-fee-box">
-    <span className="fee-label">Consultation Fee</span>
-    <div className="fee-amount">
-      <span>₹</span>{doctor.fee}
-    </div>
-    <small className="fee-note">Per visit</small>
-  </div>
-</article>
+              <div className="doctor-info">
+                <span className="doctor-specialty-badge">{doctor.specialty}</span>
+                <h2>{doctor.name}</h2>
+                <p className="doctor-qualification">{doctor.qualification}</p>
+
+                <div className="doctor-meta-row">
+                  {doctor.experience > 0 && (
+                    <span className="doctor-meta-item">
+                      <Award size={14} /> {doctor.experience} yrs exp
+                    </span>
+                  )}
+                  <span className="doctor-meta-item doctor-verified">
+                    <BadgeCheck size={14} /> Verified Doctor
+                  </span>
+                </div>
+
+                {doctor.hospital && (
+                  <div className="doctor-location">
+                    <MapPin size={15} />
+                    <span>
+                      {doctor.hospital}
+                      {doctor.address ? `, ${doctor.address}` : ""}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="doctor-fee-box">
+              <span className="fee-label">Consultation Fee</span>
+              <div className="fee-amount">
+                <span>₹</span>{doctor.fee}
+              </div>
+              <small className="fee-note">Per visit</small>
+            </div>
+          </article>
 
           <form className="booking-card" onSubmit={handleSubmit}>
             {/* DATE */}

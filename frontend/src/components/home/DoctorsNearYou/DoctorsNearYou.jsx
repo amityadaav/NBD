@@ -1,15 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
+// src/components/DoctorsNearYou.jsx
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin, Search, ChevronDown, Star, Clock,
-  Stethoscope, Building2, ArrowRight, X, ChevronLeft, ChevronRight
+  Stethoscope, Building2, ArrowRight, X, ChevronLeft, ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 import "./DoctorsNearYou.css";
 
-const API_URL = "http://localhost:5000/api/doctors";
+/* ------------------------------------------------------------------ */
+/*  Config                                                             */
+/* ------------------------------------------------------------------ */
+const API_URL = `${import.meta.env.VITE_API_URL}/doctors`;
 const ITEMS_PER_PAGE = 8;
+const FETCH_TIMEOUT = 90000;
 
-// Stable pseudo-rating derived from the doctor id (so it doesn't flicker)
+/* Stable pseudo-rating derived from the doctor id */
 const seededRating = (id) => {
   if (!id) return { rating: "4.5", reviews: 50 };
   let h = 0;
@@ -32,30 +38,64 @@ const DoctorsNearYou = () => {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        setLoading(true);
-        setError("");
+  /* ------------------------------------------------------------------ */
+  /*  Fetch                                                              */
+  /* ------------------------------------------------------------------ */
+  const fetchDoctors = useCallback(async (signal) => {
+    setLoading(true);
+    setError("");
 
-        const response = await fetch(API_URL);
-        const result = await response.json();
+    try {
+      const response = await fetch(API_URL, {
+        signal,
+        headers: { "Content-Type": "application/json" },
+      });
 
-        if (!response.ok) {
-          throw new Error(result.message || "Failed to fetch doctors");
-        }
+      const result = await response.json().catch(() => ({}));
 
-        setDoctors(Array.isArray(result) ? result : result.doctors || []);
-      } catch (err) {
-        setError(err.message || "Unable to connect to server");
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error(result.message || `Request failed (${response.status})`);
       }
-    };
 
-    fetchDoctors();
+      setDoctors(Array.isArray(result) ? result : result.doctors || []);
+    } catch (err) {
+      if (err.name === "AbortError") {
+        setError("aborted");
+      } else {
+        setError("failed");
+      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  /* ------------------------------------------------------------------ */
+  /*  Initial load + abort on unmount                                    */
+  /* ------------------------------------------------------------------ */
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+    fetchDoctors(controller.signal).finally(() => clearTimeout(timeoutId));
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [fetchDoctors]);
+
+  /* ------------------------------------------------------------------ */
+  /*  Manual retry                                                       */
+  /* ------------------------------------------------------------------ */
+  const handleRetry = () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+    fetchDoctors(controller.signal).finally(() => clearTimeout(timeoutId));
+  };
+
+  /* ------------------------------------------------------------------ */
+  /*  Filtering + pagination                                             */
+  /* ------------------------------------------------------------------ */
   const filteredDoctors = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return doctors;
@@ -102,11 +142,11 @@ const DoctorsNearYou = () => {
     return pages;
   };
 
-  /* ✅ NEW: navigate to the profile page, passing the doctor for instant render */
+  /* ------------------------------------------------------------------ */
+  /*  Navigation                                                         */
+  /* ------------------------------------------------------------------ */
   const handleViewProfile = (doctor) => {
-    navigate(`/doctors/${doctor._id}`, {
-      state: { doctor },
-    });
+    navigate(`/doctors/${doctor._id}`, { state: { doctor } });
   };
 
   const handleBookAppointment = (doctor) => {
@@ -121,16 +161,15 @@ const DoctorsNearYou = () => {
     }
 
     navigate("/book-appointment", {
-      state: {
-        doctorId: doctor._id,
-        hospitalId,
-        doctor,
-      },
+      state: { doctorId: doctor._id, hospitalId, doctor },
     });
   };
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
 
+  /* ------------------------------------------------------------------ */
+  /*  Render                                                             */
+  /* ------------------------------------------------------------------ */
   return (
     <section className="near-section">
       <div className="container">
@@ -140,11 +179,7 @@ const DoctorsNearYou = () => {
             <span className="section-label">Top Rated</span>
             <h2>Doctors Near You</h2>
           </div>
-
-          <button
-            className="view-all"
-            onClick={() => navigate("/find-doctors")}
-          >
+          <button className="view-all" onClick={() => navigate("/find-doctors")}>
             View All <ArrowRight size={16} />
           </button>
         </div>
@@ -171,38 +206,41 @@ const DoctorsNearYou = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
             {search && (
-              <button
-                className="search-clear"
-                onClick={() => setSearch("")}
-                aria-label="Clear search"
-              >
+              <button className="search-clear" onClick={() => setSearch("")} aria-label="Clear search">
                 <X size={14} />
               </button>
             )}
           </div>
         </div>
 
-        {/* Loading Skeleton */}
+        {/* Loading — silent animation */}
         {loading && (
-          <div className="doctor-data">
-            {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
-              <div className="doctor-card skeleton" key={i}>
-                <div className="skeleton-image" />
-                <div className="skeleton-info">
-                  <div className="skeleton-line short" />
-                  <div className="skeleton-line" />
-                  <div className="skeleton-line short" />
-                </div>
-              </div>
-            ))}
+          <div className="dny-loading" role="status" aria-label="Loading doctors">
+            <div className="dny-loader">
+              <span className="dny-loader-dot" />
+              <span className="dny-loader-dot" />
+              <span className="dny-loader-dot" />
+            </div>
+            <div className="dny-loader-bar">
+              <span className="dny-loader-bar-fill" />
+            </div>
           </div>
         )}
 
-        {/* Error State */}
+        {/* Error — silent, retry only */}
         {!loading && error && (
-          <div className="error-message">
-            <p>{error}</p>
-            <button onClick={() => window.location.reload()}>Retry</button>
+          <div className="dny-error" role="alert">
+            <div className="dny-error-visual">
+              <Stethoscope size={36} strokeWidth={1.5} />
+            </div>
+            <button
+              className="dny-retry"
+              onClick={handleRetry}
+              aria-label="Retry loading doctors"
+            >
+              <RefreshCw size={15} />
+              <span>Try again</span>
+            </button>
           </div>
         )}
 
@@ -218,7 +256,6 @@ const DoctorsNearYou = () => {
                 const { rating, reviews } = seededRating(doctor._id);
 
                 return (
-                  /* ✅ card is now clickable → opens profile */
                   <div
                     className="doctor-card"
                     key={doctor._id}
@@ -234,7 +271,6 @@ const DoctorsNearYou = () => {
                     style={{ cursor: "pointer" }}
                     aria-label={`View profile of ${doctor.name}`}
                   >
-                    {/* Image Area */}
                     <div className="doctor-image">
                       <img
                         src={
@@ -250,7 +286,6 @@ const DoctorsNearYou = () => {
                       </div>
                     </div>
 
-                    {/* Info Area */}
                     <div className="doctor-info">
                       <div className="doctor-header">
                         <h3>{doctor.name}</h3>
@@ -279,7 +314,6 @@ const DoctorsNearYou = () => {
                         <div className="fee">
                           <strong>₹{doctor.consultationFee}</strong>
                         </div>
-                        {/* ✅ stopPropagation so clicking Book does NOT also open profile */}
                         <button
                           className="book-btn"
                           onClick={(e) => {
@@ -313,7 +347,6 @@ const DoctorsNearYou = () => {
               )}
             </div>
 
-            {/* Pagination Controls */}
             {totalPages > 1 && (
               <nav className="dny-pagination" aria-label="Pagination">
                 <button

@@ -1,16 +1,25 @@
-import React, { useEffect, useMemo, useState } from "react";
+// src/pages/Hospitals/Hospitals.jsx
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search, MapPin, Phone, ArrowRight, ChevronDown, Building2,
-  ShieldCheck, Stethoscope, X, Filter, ArrowUpDown, Sparkles
+  ShieldCheck, Stethoscope, X, ArrowUpDown, Sparkles
 } from "lucide-react";
 import { motion } from "framer-motion";
 import "./Hospitals.css";
 
+/* ------------------------------------------------------------------ */
+/*  API config                                                         */
+/* ------------------------------------------------------------------ */
 const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
 const API_ORIGIN = API_BASE_URL.replace(/\/api$/, "");
-const HOSPITALS_ENDPOINT = `${API_BASE_URL.endsWith("/api") ? API_BASE_URL : `${API_BASE_URL}/api`}/hospitals`;
+const API_ROOT = API_BASE_URL.endsWith("/api") ? API_BASE_URL : `${API_BASE_URL}/api`;
+const HOSPITALS_ENDPOINT = `${API_ROOT}/hospitals`;
+const FETCH_TIMEOUT = 90000; // 90s — Render cold start
 
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
 const getImageUrl = (path) => {
   if (!path) return "";
   if (/^https?:\/\//i.test(path)) return path;
@@ -20,6 +29,26 @@ const getImageUrl = (path) => {
 const normalize = (value = "") =>
   String(value).toLowerCase().replace(/[\s_-]/g, "");
 
+async function fetchJson(url, signal, ms = FETCH_TIMEOUT) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+
+  const onAbort = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", onAbort);
+  }
+
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  } finally {
+    clearTimeout(timer);
+    if (signal) signal.removeEventListener("abort", onAbort);
+  }
+}
+
 const CATEGORIES = [
   { label: "All Hospitals", value: "all" },
   { label: "Multi-specialty", value: "multispecialty" },
@@ -27,7 +56,9 @@ const CATEGORIES = [
   { label: "Specialty", value: "specialty" },
 ];
 
-// Skeleton Card
+/* ------------------------------------------------------------------ */
+/*  Skeleton                                                           */
+/* ------------------------------------------------------------------ */
 const SkeletonCard = () => (
   <div className="hp-card-skeleton">
     <div className="hp-skeleton-image" />
@@ -39,6 +70,9 @@ const SkeletonCard = () => (
   </div>
 );
 
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 function Hospitals() {
   const navigate = useNavigate();
   const [hospitals, setHospitals] = useState([]);
@@ -48,61 +82,77 @@ function Hospitals() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const fetchHospitals = useCallback(async (signal) => {
+    try {
+      setLoading(true);
+      setError("");
 
-    const fetchHospitals = async () => {
-      try {
-        setLoading(true);
-        setError("");
+      const { ok, status, data } = await fetchJson(HOSPITALS_ENDPOINT, signal);
 
-        const response = await fetch(HOSPITALS_ENDPOINT, {
-          signal: controller.signal,
-        });
+      if (!ok) {
+        throw new Error(
+          data?.message ||
+          (status === 404
+            ? "Hospitals endpoint not found."
+            : `Could not load hospitals (${status}).`)
+        );
+      }
 
-        if (!response.ok) {
-          throw new Error(`Could not load hospitals (${response.status}).`);
-        }
+      const list = Array.isArray(data) ? data : data.hospitals ?? data.data ?? [];
 
-        const result = await response.json();
-        const data = Array.isArray(result)
-          ? result
-          : result.hospitals ?? result.data ?? [];
+      setHospitals(
+        list.map((hospital) => {
+          const locationParts = [
+            hospital.address?.area,
+            hospital.address?.city,
+            hospital.address?.state,
+          ]
+            .filter(Boolean)
+            .filter((v, i, arr) => arr.indexOf(v) === i);
 
-        setHospitals(
-          data.map((hospital) => ({
+          return {
             ...hospital,
             id: hospital._id || hospital.id,
             name: hospital.hospitalName || hospital.name || "Hospital",
             type: hospital.hospitalType || hospital.type || "",
             location:
-              [
-                hospital.address?.area,
-                hospital.address?.city,
-                hospital.address?.state,
-              ]
-                .filter(Boolean)
-                .filter((value, index, arr) => arr.indexOf(value) === index)
-                .join(", ") || "Location not provided",
+              locationParts.length > 0
+                ? locationParts.join(", ")
+                : "Location not provided",
             phone: hospital.phone || "",
-            image: getImageUrl(hospital.logo || hospital.images?.[0] || hospital.image),
-            specialties: Array.isArray(hospital.specialties) ? hospital.specialties : [],
+            image: getImageUrl(
+              hospital.logo || hospital.images?.[0] || hospital.image
+            ),
+            specialties: Array.isArray(hospital.specialties)
+              ? hospital.specialties.filter(Boolean)
+              : [],
             emergencyAvailable: hospital.emergencyAvailable === true,
             createdAt: hospital.createdAt || "",
-          }))
-        );
-      } catch (err) {
-        if (err.name !== "AbortError") {
-          setError(err.message || "Something went wrong.");
-        }
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
-    };
-
-    fetchHospitals();
-    return () => controller.abort();
+          };
+        })
+      );
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      setError(
+        String(err.message).includes("Failed to fetch")
+          ? "Can't reach the server. Check your connection and try again."
+          : err.message || "Something went wrong."
+      );
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchHospitals(controller.signal);
+    return () => controller.abort();
+  }, [fetchHospitals]);
+
+  const handleRetry = () => {
+    const controller = new AbortController();
+    fetchHospitals(controller.signal);
+  };
 
   const filteredHospitals = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -110,9 +160,11 @@ function Hospitals() {
     const result = hospitals.filter((hospital) => {
       const matchesSearch =
         hospital.name.toLowerCase().includes(term) ||
-        hospital.location.toLowerCase().includes(term) ||
-        hospital.type.toLowerCase().includes(term) ||
-        hospital.specialties.some((item) => item.toLowerCase().includes(term));
+        (hospital.location || "").toLowerCase().includes(term) ||
+        (hospital.type || "").toLowerCase().includes(term) ||
+        hospital.specialties.some((item) =>
+          String(item).toLowerCase().includes(term)
+        );
 
       const type = normalize(hospital.type);
       const isMulti = type.includes("multi") || type.includes("multispecial");
@@ -128,15 +180,18 @@ function Hospitals() {
     if (sortBy === "name") {
       result.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortBy === "emergency") {
-      result.sort((a, b) => Number(b.emergencyAvailable) - Number(a.emergencyAvailable));
+      result.sort(
+        (a, b) => Number(b.emergencyAvailable) - Number(a.emergencyAvailable)
+      );
     } else {
-      result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      result.sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+      );
     }
 
     return result;
   }, [hospitals, search, category, sortBy]);
 
-  // ⭐ KEY: Use navigate with state to pass hospital data
   const handleViewDetails = (hospital) => {
     navigate(`/hospitals/${hospital.id}`, {
       state: { hospital },
@@ -152,7 +207,7 @@ function Hospitals() {
 
   return (
     <main className="hp-page-container">
-      {/* ---------- Hero Header ---------- */}
+      {/* HERO */}
       <motion.section
         className="hp-hero"
         initial={{ opacity: 0, y: 20 }}
@@ -172,7 +227,6 @@ function Hospitals() {
             Explore verified hospitals, check services, and contact the right care team.
           </p>
 
-          {/* Search */}
           <form className="hp-search" onSubmit={(e) => e.preventDefault()}>
             <Search size={18} aria-hidden="true" />
             <input
@@ -206,14 +260,16 @@ function Hospitals() {
           <div className="hp-hero-stat">
             <ShieldCheck size={20} className="hp-hero-stat-icon" />
             <div>
-              <strong>{hospitals.filter(h => h.emergencyAvailable).length}</strong>
+              <strong>
+                {hospitals.filter((h) => h.emergencyAvailable).length}
+              </strong>
               <span>24/7 Emergency</span>
             </div>
           </div>
         </div>
       </motion.section>
 
-      {/* ---------- Toolbar ---------- */}
+      {/* TOOLBAR */}
       <section className="hp-toolbar">
         <div className="hp-toolbar-location">
           <div className="hp-toolbar-location-icon">
@@ -241,7 +297,7 @@ function Hospitals() {
         </div>
       </section>
 
-      {/* ---------- Results ---------- */}
+      {/* RESULTS */}
       <section className="hp-results">
         <div className="hp-results-header">
           <div>
@@ -250,7 +306,9 @@ function Hospitals() {
             <p aria-live="polite">
               {loading
                 ? "Finding hospitals…"
-                : `${filteredHospitals.length} ${filteredHospitals.length === 1 ? "hospital" : "hospitals"} found`}
+                : `${filteredHospitals.length} ${
+                    filteredHospitals.length === 1 ? "hospital" : "hospitals"
+                  } found`}
             </p>
           </div>
 
@@ -268,7 +326,6 @@ function Hospitals() {
           </label>
         </div>
 
-        {/* Active filters row */}
         {hasFilters && !loading && !error && (
           <div className="hp-active-filters">
             <span className="hp-active-label">Active:</span>
@@ -279,7 +336,8 @@ function Hospitals() {
             )}
             {category !== "all" && (
               <button className="hp-chip" onClick={() => setCategory("all")}>
-                {CATEGORIES.find(c => c.value === category)?.label} <X size={11} />
+                {CATEGORIES.find((c) => c.value === category)?.label}{" "}
+                <X size={11} />
               </button>
             )}
             <button className="hp-chip-clear" onClick={clearFilters}>
@@ -288,7 +346,6 @@ function Hospitals() {
           </div>
         )}
 
-        {/* Loading */}
         {loading && (
           <div className="hp-grid">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -297,7 +354,6 @@ function Hospitals() {
           </div>
         )}
 
-        {/* Error */}
         {!loading && error && (
           <div className="hp-state hp-state-error">
             <div className="hp-state-icon">
@@ -305,13 +361,12 @@ function Hospitals() {
             </div>
             <h3>Unable to load hospitals</h3>
             <p>{error}</p>
-            <button type="button" onClick={() => window.location.reload()}>
+            <button type="button" onClick={handleRetry}>
               Try again
             </button>
           </div>
         )}
 
-        {/* Empty */}
         {!loading && !error && filteredHospitals.length === 0 && (
           <div className="hp-state">
             <div className="hp-state-icon">
@@ -331,7 +386,6 @@ function Hospitals() {
           </div>
         )}
 
-        {/* Data */}
         {!loading && !error && filteredHospitals.length > 0 && (
           <div className="hp-grid">
             {filteredHospitals.map((hospital, index) => (
@@ -340,11 +394,13 @@ function Hospitals() {
                 key={hospital.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.4) }}
+                transition={{
+                  duration: 0.35,
+                  delay: Math.min(index * 0.04, 0.4),
+                }}
                 onClick={() => handleViewDetails(hospital)}
                 style={{ cursor: "pointer" }}
               >
-                {/* Image */}
                 <div className="hp-card-image">
                   {hospital.image ? (
                     <img
@@ -353,11 +409,17 @@ function Hospitals() {
                       loading="lazy"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
-                        e.currentTarget.nextElementSibling?.classList.remove("hp-hidden");
+                        e.currentTarget.nextElementSibling?.classList.remove(
+                          "hp-hidden"
+                        );
                       }}
                     />
                   ) : null}
-                  <div className={`hp-card-image-placeholder ${hospital.image ? "hp-hidden" : ""}`}>
+                  <div
+                    className={`hp-card-image-placeholder ${
+                      hospital.image ? "hp-hidden" : ""
+                    }`}
+                  >
                     <Building2 size={34} strokeWidth={1.5} />
                   </div>
                   <span className="hp-card-image-shade" />
@@ -367,11 +429,12 @@ function Hospitals() {
                     </span>
                   )}
                   {hospital.type && (
-                    <span className="hp-badge hp-badge-type">{hospital.type}</span>
+                    <span className="hp-badge hp-badge-type">
+                      {hospital.type}
+                    </span>
                   )}
                 </div>
 
-                {/* Content */}
                 <div className="hp-card-content">
                   <h3 title={hospital.name}>{hospital.name}</h3>
 
@@ -383,7 +446,9 @@ function Hospitals() {
                   {hospital.specialties.length > 0 ? (
                     <div className="hp-card-specialties">
                       {hospital.specialties.slice(0, 3).map((spec) => (
-                        <span className="hp-specialty" key={spec}>{spec}</span>
+                        <span className="hp-specialty" key={spec}>
+                          {spec}
+                        </span>
                       ))}
                       {hospital.specialties.length > 3 && (
                         <span className="hp-specialty hp-specialty-more">
@@ -416,7 +481,11 @@ function Hospitals() {
                         e.stopPropagation();
                         if (!hospital.phone) e.preventDefault();
                       }}
-                      aria-label={hospital.phone ? `Call ${hospital.name}` : "Phone unavailable"}
+                      aria-label={
+                        hospital.phone
+                          ? `Call ${hospital.name}`
+                          : "Phone unavailable"
+                      }
                     >
                       <Phone size={16} />
                     </a>

@@ -74,7 +74,7 @@
 .sm-title {
   margin: 0;
   font-family: "Sora", "DM Sans", sans-serif;
-  font-size: clamp(3rem, 5.6vw, 4.2rem);
+  font-size: clamp(3rem, 5.6vw, 3.8rem);
   line-height: 1;
   font-weight: 600;
   letter-spacing: -0.04em;
@@ -548,4 +548,19 @@
   @media (max-width: 980px) {
     .sm-person { transform: none !important; }
   }
+}
+.sm-spinner {
+  display: inline-block;
+  color: var(--primary, #0f766e);
+  animation: sm-spin 1s linear infinite;
+  vertical-align: middle;
+}
+@keyframes sm-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.sm-stats__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }

@@ -1,9 +1,11 @@
+// src/pages/BloodDonation/RequestBlood.jsx
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Droplet, AlertCircle, ArrowRight, ArrowLeft, UserRound,
   Building2, MapPin, Phone, Mail, Clock, FileText,
   CheckCircle2, ShieldCheck, HeartPulse, Zap,
 } from "lucide-react";
+import { bloodApi } from "../../services/bloodApi";
 import "./RequestBlood.css";
 
 /* ------------------------------------------------------------------ */
@@ -11,9 +13,9 @@ import "./RequestBlood.css";
 /* ------------------------------------------------------------------ */
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const URGENCY_LEVELS = [
-  { value: "normal",   label: "Normal",   desc: "Within 24 hours",        Icon: Clock,    tone: "calm" },
-  { value: "urgent",   label: "Urgent",   desc: "Within 6 hours",         Icon: AlertCircle, tone: "warn" },
-  { value: "critical", label: "Critical", desc: "Immediate · 1–2 hours", Icon: Zap,      tone: "danger" },
+  { value: "normal",   label: "Normal",   desc: "Within 24 hours",         Icon: Clock,       tone: "calm"   },
+  { value: "urgent",   label: "Urgent",   desc: "Within 6 hours",          Icon: AlertCircle, tone: "warn"   },
+  { value: "critical", label: "Critical", desc: "Immediate · 1–2 hours",   Icon: Zap,         tone: "danger" },
 ];
 const CITIES = [
   "Bengaluru", "Mumbai", "Delhi", "Chennai",
@@ -103,7 +105,6 @@ function RequestBlood({ onSubmitted, onCancel, defaultValues = {} }) {
     setErrors(errs);
 
     if (Object.keys(errs).length > 0) {
-      // Focus first error
       const firstKey = Object.keys(errs)[0];
       const el = formRef.current?.querySelector(`[name="${firstKey}"]`);
       el?.focus();
@@ -113,24 +114,34 @@ function RequestBlood({ onSubmitted, onCancel, defaultValues = {} }) {
 
     setSubmitting(true);
     try {
-      // TODO: replace with api.post("/blood/requests", form)
-      const response = await new Promise((resolve) =>
-        setTimeout(
-          () =>
-            resolve({
-              requestId: "BR-" + Math.floor(100000 + Math.random() * 900000),
-              submittedAt: new Date().toISOString(),
-            }),
-          900,
-        ),
-      );
+      /* Build payload matching backend bloodRequestRoutes */
+      const payload = {
+        bloodGroup: form.bloodGroup,
+        units: Number(form.units),
+        urgency: form.urgency,
+        patientName: form.patientName.trim(),
+        patientAge: form.patientAge ? Number(form.patientAge) : null,
+        patientGender: form.patientGender || null,
+        hospitalName: form.hospitalName.trim(),
+        city: form.city,
+        address: form.address.trim() || null,
+        contactName: form.contactName.trim(),
+        contactPhone: form.contactPhone.trim(),
+        contactEmail: form.contactEmail.trim() || null,
+        reason: form.reason.trim() || null,
+        notes: form.notes.trim() || null,
+      };
 
-      onSubmitted?.({ ...form, ...response });
+      /* Real API call — POST /api/blood-requests */
+      const response = await bloodApi.createRequest(payload);
+
+      onSubmitted?.({
+        ...payload,
+        requestId: response?.requestId || response?._id || response?.id || null,
+        submittedAt: response?.submittedAt || response?.createdAt || new Date().toISOString(),
+      });
     } catch (err) {
-      setSubmitError(
-        err?.response?.data?.message ||
-        "Couldn't submit your request. Please try again.",
-      );
+      setSubmitError(err?.message || "Couldn't submit your request. Please try again.");
     } finally {
       setSubmitting(false);
     }

@@ -1,3 +1,4 @@
+// src/pages/Doctors/FindDoctors.jsx
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -7,14 +8,20 @@ import {
 } from "lucide-react";
 import "./FindDoctors.css";
 
+/* ------------------------------------------------------------------ */
+/*  API config                                                         */
+/* ------------------------------------------------------------------ */
 const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
 const API_ORIGIN = API_URL.replace(/\/api$/, "");
-const DOCTORS_ENDPOINT = `${API_URL.endsWith("/api") ? API_URL : `${API_URL}/api`}/doctors`;
+const API_BASE = API_URL.endsWith("/api") ? API_URL : `${API_URL}/api`;
+const DOCTORS_ENDPOINT = `${API_BASE}/doctors`;
+const FETCH_TIMEOUT = 90000; // 90s — Render cold start
 
 const ITEMS_PER_PAGE = 12;
 
-/* ---------- helpers ---------- */
-
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
 function getHospitalName(doctor) {
   return typeof doctor.hospitalId === "object"
     ? doctor.hospitalId?.hospitalName || "Hospital"
@@ -45,6 +52,32 @@ function parseExperience(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Fetch with timeout                                                 */
+/* ------------------------------------------------------------------ */
+async function fetchWithTimeout(url, signal, ms = FETCH_TIMEOUT) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+
+  const onAbort = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", onAbort);
+  }
+
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  } finally {
+    clearTimeout(timer);
+    if (signal) signal.removeEventListener("abort", onAbort);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Avatar                                                             */
+/* ------------------------------------------------------------------ */
 function DoctorAvatar({ name, imageUrl }) {
   const [failed, setFailed] = useState(false);
   return (
@@ -63,6 +96,9 @@ function DoctorAvatar({ name, imageUrl }) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 function FindDoctors() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -81,22 +117,29 @@ function FindDoctors() {
   const [currentPage, setCurrentPage] = useState(1);
 
   /* ---------- data ---------- */
-
   const fetchDoctors = useCallback(async (signal) => {
     try {
       setLoading(true);
       setError("");
-      const response = await fetch(DOCTORS_ENDPOINT, { signal });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || "Failed to fetch doctors.");
 
-      const list = Array.isArray(result) ? result : result.doctors || [];
+      const { ok, status, data } = await fetchWithTimeout(DOCTORS_ENDPOINT, signal);
+
+      if (!ok) {
+        throw new Error(
+          data?.message ||
+          (status === 404 ? "Doctors endpoint not found" : `Request failed (${status})`)
+        );
+      }
+
+      const list = Array.isArray(data) ? data : data.doctors || [];
       setDoctors(list);
     } catch (err) {
-      if (err.name !== "AbortError") {
-        console.error("Fetch doctors error:", err);
-        setError(err.message || "Unable to connect to the server.");
-      }
+      if (err.name === "AbortError") return;
+      setError(
+        String(err.message).includes("Failed to fetch")
+          ? "Can't reach the server. Check your connection."
+          : err.message || "Unable to load doctors."
+      );
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
@@ -109,14 +152,12 @@ function FindDoctors() {
   }, [fetchDoctors]);
 
   /* ---------- debounce ---------- */
-
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timer);
   }, [search]);
 
   /* ---------- URL sync ---------- */
-
   useEffect(() => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
@@ -127,13 +168,11 @@ function FindDoctors() {
   }, [debouncedSearch, specialty, consultationType, experience, setSearchParams]);
 
   /* ---------- pagination reset ---------- */
-
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearch, specialty, consultationType, experience]);
 
   /* ---------- derived ---------- */
-
   const specialties = useMemo(
     () => [...new Set(doctors.map((d) => d.specialty).filter(Boolean))]
       .sort((a, b) => a.localeCompare(b)),
@@ -172,7 +211,6 @@ function FindDoctors() {
   const paginatedDoctors = filteredDoctors.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   /* ---------- handlers ---------- */
-
   const handlePageChange = (page) => {
     setCurrentPage(page);
     document.querySelector(".app-dr-results")?.scrollIntoView({
@@ -205,11 +243,13 @@ function FindDoctors() {
     setCurrentPage(1);
   };
 
-  /* ✅ NEW: open the doctor profile */
+  const handleRetry = () => {
+    const controller = new AbortController();
+    fetchDoctors(controller.signal);
+  };
+
   const handleViewProfile = (doctor) => {
-    navigate(`/doctors/${doctor._id}`, {
-      state: { doctor },
-    });
+    navigate(`/doctors/${doctor._id}`, { state: { doctor } });
   };
 
   const handleBookAppointment = (doctor) => {
@@ -229,11 +269,9 @@ function FindDoctors() {
   const hasActiveFilters = activeFilterCount > 0 || search.trim().length > 0;
 
   /* ---------- render ---------- */
-
   return (
     <div className="app-dr-container">
       <div className="app-dr-inner">
-
         {/* HERO */}
         <header className="app-dr-hero">
           <div className="app-dr-hero-content">
@@ -399,7 +437,7 @@ function FindDoctors() {
                 <RefreshCw size={32} />
                 <h3>Something went wrong</h3>
                 <p>{error}</p>
-                <button type="button" onClick={() => window.location.reload()}>
+                <button type="button" onClick={handleRetry}>
                   Retry
                 </button>
               </div>
@@ -411,7 +449,6 @@ function FindDoctors() {
                       (doctor.consultationType || "").toLowerCase() === "online";
 
                     return (
-                      /* ✅ CARD IS CLICKABLE → opens profile */
                       <article
                         className="app-dr-card"
                         key={doctor._id}
@@ -473,7 +510,6 @@ function FindDoctors() {
                               {doctor.consultationFee || "N/A"}
                             </strong>
                           </div>
-                          {/* ✅ stopPropagation so Book doesn't open profile */}
                           <button
                             type="button"
                             className="app-dr-book"
@@ -490,7 +526,6 @@ function FindDoctors() {
                   })}
                 </div>
 
-                {/* PAGINATION */}
                 {totalPages > 1 && (
                   <nav className="app-dr-pagination" aria-label="Pagination">
                     <button

@@ -671,3 +671,18 @@
     transform: translateY(0) scale(1);
   }
 }
+.signup-spinner {
+  animation: signup-spin 1s linear infinite;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+@keyframes signup-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.signup-slow-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+}

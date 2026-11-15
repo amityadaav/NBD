@@ -1,5 +1,5 @@
-
-import React, { useState } from "react";
+// src/pages/Signup.jsx
+import React, { useState, useEffect } from "react";
 import "./Signup.css";
 import {
   Stethoscope,
@@ -7,8 +7,10 @@ import {
   EyeOff,
   CheckCircle2,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import api from "../../services/api";
 
 function Signup() {
   const navigate = useNavigate();
@@ -25,15 +27,21 @@ function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [slow, setSlow] = useState(false);
+
+  /* Show "waking up" hint if the request exceeds 8s (Render cold start) */
+  useEffect(() => {
+    if (!loading) {
+      setSlow(false);
+      return;
+    }
+    const timer = setTimeout(() => setSlow(true), 8000);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   function handleInput(e) {
     const { name, value } = e.target;
-
-    setInput((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
+    setInput((prev) => ({ ...prev, [name]: value }));
     setError("");
   }
 
@@ -41,25 +49,18 @@ function Signup() {
     e.preventDefault();
     setError("");
 
-    // Validate full name
     if (input.fullname.trim().length < 2) {
       setError("Please enter your full name.");
       return;
     }
-
-    // Validate email
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim())) {
       setError("Please enter a valid email address.");
       return;
     }
-
-    // Validate password
     if (input.password.length < 8) {
       setError("Password must be at least 8 characters long.");
       return;
     }
-
-    // Confirm password
     if (input.password !== input.confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -68,56 +69,34 @@ function Signup() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/signup",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            fullname: input.fullname.trim(),
-            email: input.email.trim(),
-            password: input.password,
-            confirmPassword: input.confirmPassword,
-          }),
-        }
-      );
+      const response = await api.post("/signup", {
+        fullname: input.fullname.trim(),
+        email: input.email.trim(),
+        password: input.password,
+        confirmPassword: input.confirmPassword,
+      });
 
-      // Read response safely
-      const responseText = await response.text();
-      let data = {};
-
-      try {
-        data = responseText ? JSON.parse(responseText) : {};
-      } catch {
-        throw new Error(
-          "Invalid server response. Please check your backend API."
-        );
-      }
-
-      if (!response.ok) {
-        throw new Error(data.message || "Signup failed.");
-      }
-
-      // Show success modal
+      // Success — clear form and show modal
       setShowSuccess(true);
-
       setInput({
         fullname: "",
         email: "",
         password: "",
         confirmPassword: "",
       });
-
       setShowPassword(false);
       setShowConfirmPassword(false);
     } catch (err) {
-      console.error("Signup error:", err);
-      setError(
-        err.message ||
-          "Unable to connect to the server. Please try again."
-      );
+      if (err.code === "ECONNABORTED" || /timeout/i.test(err.message || "")) {
+        setError("Server is waking up. Please wait a moment and try again.");
+      } else if (!err.response) {
+        setError("Can't reach the server. Check your connection and try again.");
+      } else {
+        setError(
+          err.response?.data?.message ||
+          "Unable to create your account. Please try again."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -136,11 +115,9 @@ function Signup() {
           </div>
 
           <p className="welcome-text">Create your account</p>
-
           <h1>Join NearbyDoctor</h1>
 
           <form className="signup-form" onSubmit={handleSubmit}>
-            {/* Full Name */}
             <div className="form-group">
               <label htmlFor="name">FULL NAME</label>
               <input
@@ -152,10 +129,10 @@ function Signup() {
                 onChange={handleInput}
                 autoComplete="name"
                 required
+                disabled={loading}
               />
             </div>
 
-            {/* Email */}
             <div className="form-group">
               <label htmlFor="email">EMAIL</label>
               <input
@@ -167,10 +144,10 @@ function Signup() {
                 onChange={handleInput}
                 autoComplete="email"
                 required
+                disabled={loading}
               />
             </div>
 
-            {/* Password */}
             <div className="form-group">
               <label htmlFor="password">PASSWORD</label>
               <input
@@ -182,32 +159,21 @@ function Signup() {
                 onChange={handleInput}
                 autoComplete="new-password"
                 required
+                disabled={loading}
               />
-
               <button
                 type="button"
                 className="signup-password-toggle"
-                onClick={() =>
-                  setShowPassword((prev) => !prev)
-                }
-                aria-label={
-                  showPassword ? "Hide password" : "Show password"
-                }
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
                 aria-pressed={showPassword}
               >
-                {showPassword ? (
-                  <EyeOff size={18} />
-                ) : (
-                  <Eye size={18} />
-                )}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
 
-            {/* Confirm Password */}
             <div className="form-group">
-              <label htmlFor="confirmPassword">
-                CONFIRM PASSWORD
-              </label>
+              <label htmlFor="confirmPassword">CONFIRM PASSWORD</label>
               <input
                 id="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
@@ -217,57 +183,64 @@ function Signup() {
                 onChange={handleInput}
                 autoComplete="new-password"
                 required
+                disabled={loading}
               />
-
-
-<button
-  type="button"
-  className="signup-password-toggle"
-  onClick={() => setShowConfirmPassword((prev) => !prev)}
-  aria-label={
-    showConfirmPassword ? "Hide password" : "Show password"
-  }
->
-  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-</button>
+              <button
+                type="button"
+                className="signup-password-toggle"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                aria-label={
+                  showConfirmPassword ? "Hide password" : "Show password"
+                }
+                aria-pressed={showConfirmPassword}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff size={18} />
+                ) : (
+                  <Eye size={18} />
+                )}
+              </button>
             </div>
 
-            {/* Display errors */}
             {error && (
               <p className="signup-error" role="alert">
                 {error}
               </p>
             )}
 
-            {/* Terms */}
             <div className="terms-row">
-              <input
-                id="terms"
-                type="checkbox"
-                required
-              />
+              <input id="terms" type="checkbox" required disabled={loading} />
               <label htmlFor="terms">
                 I agree to the Terms &amp; Conditions
               </label>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               className="signup-button"
               disabled={loading}
             >
-              {loading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="signup-spinner" />{" "}
+                  {slow ? "WAKING UP SERVER..." : "CREATING ACCOUNT..."}
+                </>
+              ) : (
+                "CREATE ACCOUNT"
+              )}
             </button>
+
+            {slow && loading && (
+              <p className="signup-slow-hint">
+                First request after idle can take up to a minute. Please wait.
+              </p>
+            )}
           </form>
 
-          {/* Login */}
           <p className="login-text">
-            Already have an account?{" "}
-            <Link to="/login">Login</Link>
+            Already have an account? <Link to="/login">Login</Link>
           </p>
 
-          {/* Bottom Links */}
           <div className="signup-links">
             <span>FAQ</span>
             <b>|</b>
@@ -281,29 +254,18 @@ function Signup() {
         <div className="signup-info-section">
           <div className="info-content">
             <h2>About NearbyDoctor</h2>
-
             <p>
-              NearbyDoctor is a modern healthcare platform
-              that helps patients find trusted doctors and
-              healthcare professionals near them.
+              NearbyDoctor is a modern healthcare platform that helps patients
+              find trusted doctors and healthcare professionals near them.
             </p>
-
             <h3>Features</h3>
-
             <ul>
-              <li>
-                Find doctors based on location and specialty.
-              </li>
-              <li>
-                Browse experienced and trusted doctors.
-              </li>
-              <li>
-                Simple and convenient doctor search.
-              </li>
+              <li>Find doctors based on location and specialty.</li>
+              <li>Browse experienced and trusted doctors.</li>
+              <li>Simple and convenient doctor search.</li>
             </ul>
           </div>
 
-          {/* Decorative Mountains */}
           <div className="mountains">
             <span className="mountain mountain-one" />
             <span className="mountain mountain-two" />
@@ -311,7 +273,6 @@ function Signup() {
             <span className="mountain mountain-four" />
           </div>
 
-          {/* Footer */}
           <div className="info-footer">
             <span>NearbyDoctor</span>
             <span>Features</span>
@@ -320,7 +281,6 @@ function Signup() {
         </div>
       </div>
 
-      {/* SUCCESS MODAL */}
       {showSuccess && (
         <div className="signup-success-overlay">
           <div
@@ -332,16 +292,11 @@ function Signup() {
             <div className="signup-success-icon">
               <CheckCircle2 size={52} />
             </div>
-
-            <h2 id="signup-success-title">
-              Signup Successful!
-            </h2>
-
+            <h2 id="signup-success-title">Signup Successful!</h2>
             <p>
-              Welcome to NearbyDoctor! Your account has been
-              created successfully.
+              Welcome to NearbyDoctor! Your account has been created
+              successfully.
             </p>
-
             <button
               type="button"
               className="signup-success-button"

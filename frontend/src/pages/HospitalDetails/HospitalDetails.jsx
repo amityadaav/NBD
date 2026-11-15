@@ -1,15 +1,17 @@
+// src/pages/Hospitals/HospitalDetails.jsx
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   MapPin, Phone, Mail, Globe, Building2, Bed, ShieldCheck,
   ArrowLeft, Stethoscope, IndianRupee, CalendarDays, CheckCircle2,
-  BriefcaseMedical, AlertCircle, RefreshCw, Users, Star, Clock,
-  Share2, Navigation, MessageCircle, ChevronRight, Sparkles, Award
+  BriefcaseMedical, AlertCircle, Users, Navigation, Share2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import "./HospitalDetails.css";
 
-// Smart URL builder — handles VITE_API_URL with or without /api
+/* ------------------------------------------------------------------ */
+/*  API config                                                         */
+/* ------------------------------------------------------------------ */
 const getBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
   const base = (envUrl || "http://localhost:5000").replace(/\/+$/, "");
@@ -20,8 +22,34 @@ const API_BASE = getBaseUrl();
 const API_ORIGIN = API_BASE.replace(/\/api$/, "");
 const HOSPITALS_API = `${API_BASE}/hospitals`;
 const DOCTORS_API = `${API_BASE}/doctors`;
+const FETCH_TIMEOUT = 90000; // 90s — Render cold start
 
-// Skeleton loader for initial page
+/* ------------------------------------------------------------------ */
+/*  Fetch with timeout                                                 */
+/* ------------------------------------------------------------------ */
+async function fetchJson(url, signal, ms = FETCH_TIMEOUT) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+
+  const onAbort = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", onAbort);
+  }
+
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  } finally {
+    clearTimeout(timer);
+    if (signal) signal.removeEventListener("abort", onAbort);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Skeleton                                                           */
+/* ------------------------------------------------------------------ */
 const PageSkeleton = () => (
   <div className="hd-page">
     <div className="hd-skeleton-back" />
@@ -38,96 +66,99 @@ const PageSkeleton = () => (
   </div>
 );
 
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 const HospitalDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [hospital, setHospital] = useState(null);
+  const [hospital, setHospital] = useState(location.state?.hospital || null);
   const [doctors, setDoctors] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!location.state?.hospital);
   const [error, setError] = useState("");
   const [activeImage, setActiveImage] = useState(0);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const fetchDetails = async () => {
+    if (!id) return;
+
+    const controller = new AbortController();
+    const hasRouteState = Boolean(location.state?.hospital);
+
+    const load = async () => {
       try {
         setLoading(true);
         setError("");
 
-        let hospitalData = null;
+        /* ---------------------------------------------------------- */
+        /* Hospital: parallel attempts (not sequential)               */
+        /* ---------------------------------------------------------- */
+        let hospitalData = location.state?.hospital || null;
 
-        // PRIORITY 1: Router state
-        if (location.state?.hospital) {
-          hospitalData = location.state.hospital;
-        }
-
-        // PRIORITY 2: Direct fetch
         if (!hospitalData) {
-          try {
-            const hospRes = await fetch(`${HOSPITALS_API}/${id}`);
-            if (hospRes.ok) {
-              const hospData = await hospRes.json();
-              hospitalData = hospData.hospital || hospData.data || hospData;
-              if (Array.isArray(hospitalData)) hospitalData = hospitalData[0];
-            }
-          } catch (e) {
-            console.warn("Direct fetch failed:", e.message);
-          }
-        }
+          // Fire detail + list at the same time; use whichever wins
+          const [detailRes, listRes] = await Promise.allSettled([
+            fetchJson(`${HOSPITALS_API}/${id}`, controller.signal),
+            fetchJson(HOSPITALS_API, controller.signal),
+          ]);
 
-        // PRIORITY 3: List fallback
-        if (!hospitalData?.hospitalName) {
-          try {
-            const listRes = await fetch(HOSPITALS_API);
-            if (listRes.ok) {
-              const listData = await listRes.json();
-              const allHospitals = Array.isArray(listData)
-                ? listData
-                : listData.hospitals || listData.data || [];
-              hospitalData = allHospitals.find((h) => String(h._id) === String(id));
-            }
-          } catch (e) {
-            console.warn("List fetch failed:", e.message);
+          if (detailRes.status === "fulfilled" && detailRes.value.ok) {
+            const d = detailRes.value.data;
+            hospitalData = d.hospital || d.data || d;
+            if (Array.isArray(hospitalData)) hospitalData = hospitalData[0];
+          }
+
+          if (!hospitalData?.hospitalName &&
+              listRes.status === "fulfilled" &&
+              listRes.value.ok) {
+            const ld = listRes.value.data;
+            const all = Array.isArray(ld) ? ld : ld.hospitals || ld.data || [];
+            hospitalData = all.find((h) => String(h._id) === String(id)) || null;
           }
         }
 
         if (!hospitalData?.hospitalName) {
           throw new Error(
-            "This hospital could not be found. Please try again from the hospitals page."
+            "This hospital could not be found. It may have been removed or the link is broken."
           );
         }
 
         setHospital(hospitalData);
 
-        // Fetch doctors
-        try {
-          const docsRes = await fetch(DOCTORS_API);
-          if (docsRes.ok) {
-            const docsData = await docsRes.json();
-            const allDoctors = Array.isArray(docsData) ? docsData : docsData.doctors || [];
-            const hospitalDoctors = allDoctors.filter((doc) => {
-              const docHospId =
-                typeof doc.hospitalId === "object" ? doc.hospitalId?._id : doc.hospitalId;
-              return String(docHospId) === String(id);
-            });
-            setDoctors(hospitalDoctors);
-          }
-        } catch (docErr) {
-          console.warn("Could not fetch doctors:", docErr);
+        /* ---------------------------------------------------------- */
+        /* Doctors: fetch in parallel with hospital (already done)    */
+        /* ---------------------------------------------------------- */
+        const docsRes = await fetchJson(DOCTORS_API, controller.signal);
+        if (docsRes.ok) {
+          const all = Array.isArray(docsRes.data)
+            ? docsRes.data
+            : docsRes.data.doctors || [];
+          const forThisHospital = all.filter((doc) => {
+            const docHospId =
+              typeof doc.hospitalId === "object" ? doc.hospitalId?._id : doc.hospitalId;
+            return String(docHospId) === String(id);
+          });
+          setDoctors(forThisHospital);
         }
       } catch (err) {
-        console.error("Hospital details fetch error:", err);
-        setError(err.message || "Unable to load hospital details");
+        if (err.name === "AbortError") return;
+        setError(
+          String(err.message).includes("Failed to fetch")
+            ? "Can't reach the server. Check your connection and try again."
+            : err.message || "Unable to load hospital details"
+        );
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
-    if (id) fetchDetails();
+    load();
+    return () => controller.abort();
   }, [id, location.state]);
 
+  /* ---------- handlers ---------- */
   const handleBookDoctor = (doctor) => {
     navigate("/book-appointment", {
       state: { doctorId: doctor._id, hospitalId: id, doctor },
@@ -140,29 +171,36 @@ const HospitalDetails = () => {
     return `${API_ORIGIN}/${String(path).replace(/^\/+/, "")}`;
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
+    const url = window.location.href;
+    const title = hospital?.hospitalName || "Hospital";
     if (navigator.share) {
-      navigator.share({
-        title: hospital.hospitalName,
-        text: `Check out ${hospital.hospitalName}`,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
+      try {
+        await navigator.share({ title, text: `Check out ${title}`, url });
+      } catch {
+        /* user cancelled — ignore */
+      }
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
   const handleDirections = () => {
+    if (!hospital) return;
     const address = [
       hospital.address?.street,
       hospital.address?.area,
       hospital.address?.city,
     ].filter(Boolean).join(", ");
-    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, "_blank");
+    window.open(
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,
+      "_blank"
+    );
   };
 
+  /* ---------- states ---------- */
   if (loading) return <PageSkeleton />;
 
   if (error) {
@@ -187,6 +225,7 @@ const HospitalDetails = () => {
 
   if (!hospital) return null;
 
+  /* ---------- derived ---------- */
   const fullAddress =
     [
       hospital.address?.street,
@@ -198,20 +237,19 @@ const HospitalDetails = () => {
       .filter(Boolean)
       .join(", ") || "Address not available";
 
-  // Build image gallery
   const galleryImages = [
     hospital.logo && getImageUrl(hospital.logo),
     ...(hospital.images || []).map(getImageUrl),
   ].filter(Boolean);
 
+  /* ---------- render ---------- */
   return (
     <div className="hd-page">
-      {/* Back Button */}
       <button className="hd-back-btn" onClick={() => navigate(-1)}>
         <ArrowLeft size={16} /> Back
       </button>
 
-      {/* Hero */}
+      {/* HERO */}
       <motion.div
         className="hd-hero"
         initial={{ opacity: 0, y: 20 }}
@@ -253,7 +291,6 @@ const HospitalDetails = () => {
               <MapPin size={16} /> {fullAddress}
             </p>
 
-            {/* Quick Actions */}
             <div className="hd-quick-actions">
               {hospital.phone && (
                 <a href={`tel:${hospital.phone}`} className="hd-quick-btn">
@@ -297,7 +334,7 @@ const HospitalDetails = () => {
         </div>
       </motion.div>
 
-      {/* Image Gallery */}
+      {/* GALLERY */}
       {galleryImages.length > 1 && (
         <div className="hd-gallery">
           <div className="hd-gallery-main">
@@ -317,6 +354,7 @@ const HospitalDetails = () => {
         </div>
       )}
 
+      {/* MAIN */}
       <div className="hd-layout">
         <div className="hd-main-content">
           <section className="hd-card">
@@ -362,7 +400,7 @@ const HospitalDetails = () => {
 
           <section className="hd-card">
             <div className="hd-card-header">
-              <h2>Facilities & Services</h2>
+              <h2>Facilities &amp; Services</h2>
               {hospital.facilities?.length > 0 && (
                 <span className="hd-card-badge">{hospital.facilities.length}</span>
               )}
@@ -421,7 +459,9 @@ const HospitalDetails = () => {
                 {hospital.workingHours.map((wh, i) => (
                   <div className="hd-wh-row" key={i}>
                     <span>{wh.day || wh.days || "Day"}</span>
-                    <span>{wh.open || wh.openingTime || "—"} - {wh.close || wh.closingTime || "—"}</span>
+                    <span>
+                      {wh.open || wh.openingTime || "—"} - {wh.close || wh.closingTime || "—"}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -442,7 +482,7 @@ const HospitalDetails = () => {
         </aside>
       </div>
 
-      {/* Doctors Section */}
+      {/* DOCTORS */}
       <div className="hd-doctors-section">
         <div className="hd-section-header">
           <div>
@@ -508,7 +548,9 @@ const HospitalDetails = () => {
                       <CalendarDays size={13} />
                       <span>
                         {doctor.availableDays.slice(0, 3).join(", ")}
-                        {doctor.availableDays.length > 3 ? ` +${doctor.availableDays.length - 3}` : ""}
+                        {doctor.availableDays.length > 3
+                          ? ` +${doctor.availableDays.length - 3}`
+                          : ""}
                       </span>
                     </div>
                   )}

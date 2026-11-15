@@ -645,3 +645,18 @@
   opacity: 0.7;
   cursor: not-allowed;
 }
+.login-spinner {
+  animation: login-spin 1s linear infinite;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+@keyframes login-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.login-slow-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+}

@@ -1,20 +1,129 @@
-
-import { ArrowRight, ArrowUpRight, Play, Stethoscope, HeartPulse } from "lucide-react";
+// src/components/home/Hero.jsx
+import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, ArrowUpRight, Play, Stethoscope, HeartPulse, Loader2 } from "lucide-react";
 import "./Hero.css";
 import heroImage from "../../../assets/images/HealthcareTeams.png";
 
-const actions = [
-  { href: "/doctors", label: "Find a doctor", Icon: Stethoscope, variant: "primary" },
-  { href: "/donate-blood", label: "Donate blood", Icon: HeartPulse, variant: "blood" },
-];
+/* ------------------------------------------------------------------ */
+/*  Config                                                             */
+/* ------------------------------------------------------------------ */
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
+const API_BASE = API_URL.endsWith("/api") ? API_URL : `${API_URL}/api`;
+const FETCH_TIMEOUT = 90000;
 
-const stats = [
-  { value: "10k+", label: "Happy patients" },
-  { value: "500+", label: "Verified doctors" },
-  { value: "4.8", label: "Average rating" },
-];
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+const formatCount = (n) => {
+  if (!Number.isFinite(n) || n < 0) return "—";
+  if (n === 0) return "0";
+  if (n >= 1_000_000) {
+    const v = n / 1_000_000;
+    return `${v >= 10 ? Math.round(v) : v.toFixed(1).replace(/\.0$/, "")}M+`;
+  }
+  if (n >= 1_000) {
+    const v = n / 1_000;
+    return `${v >= 10 ? Math.round(v) : v.toFixed(1).replace(/\.0$/, "")}k+`;
+  }
+  return `${n}+`;
+};
 
+async function fetchJson(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    const json = await res.json().catch(() => ({}));
+    return res.ok ? json : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 const Hero = () => {
+  const [counts, setCounts] = useState({
+    patients: null,
+    doctors: null,
+    hospitals: null,
+  });
+  const [loading, setLoading] = useState(true);
+
+  const loadCounts = useCallback(async () => {
+    setLoading(true);
+
+    const [doctorsData, hospitalsData] = await Promise.all([
+      fetchJson(`${API_BASE}/doctors`),
+      fetchJson(`${API_BASE}/hospitals`),
+    ]);
+
+    const doctorList = Array.isArray(doctorsData)
+      ? doctorsData
+      : doctorsData?.doctors || [];
+    const hospitalList = Array.isArray(hospitalsData)
+      ? hospitalsData
+      : hospitalsData?.hospitals || [];
+
+    /*
+      "Patients" isn't in an endpoint you already have.
+      Two honest choices:
+        a) Show the number of distinct patients who have booked appointments
+           → requires /api/appointments which you DO have mounted in server.js
+        b) Fall back to "—" if the call fails
+
+      We'll try /api/appointments once. If it 404s or isn't public,
+      patients shows "—" and we don't lie.
+    */
+    let patientCount = null;
+    const appointmentsData = await fetchJson(`${API_BASE}/appointments`);
+    if (appointmentsData) {
+      const apptList = Array.isArray(appointmentsData)
+        ? appointmentsData
+        : appointmentsData?.appointments || [];
+
+      // Count distinct patient ids if present
+      const ids = new Set();
+      apptList.forEach((a) => {
+        const id =
+          a?.patientId?._id ||
+          a?.patientId ||
+          a?.patient?._id ||
+          a?.patient ||
+          a?.userId;
+        if (id) ids.add(String(id));
+      });
+      if (ids.size > 0) patientCount = ids.size;
+      else if (apptList.length > 0) patientCount = apptList.length;
+    }
+
+    setCounts({
+      patients: patientCount,
+      doctors: doctorList.length || null,
+      hospitals: hospitalList.length || null,
+    });
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadCounts();
+  }, [loadCounts]);
+
+  const actions = [
+    { href: "/doctors", label: "Find a doctor", Icon: Stethoscope, variant: "primary" },
+    { href: "/donate-blood", label: "Donate blood", Icon: HeartPulse, variant: "blood" },
+  ];
+
+  const stats = [
+    { value: formatCount(counts.patients), label: "Patients served" },
+    { value: formatCount(counts.doctors), label: "Verified doctors" },
+    { value: formatCount(counts.hospitals), label: "Partner hospitals" },
+  ];
+
   return (
     <section className="sm-hero">
       <div className="sm-stage">
@@ -37,9 +146,9 @@ const Hero = () => {
 
           <div className="sm-actions">
             {actions.map(({ href, label, Icon, variant }) => (
-              <a
+              <Link
                 key={label}
-                href={href}
+                to={href}
                 className={`sm-action${variant ? ` sm-action--${variant}` : ""}`}
               >
                 <span className="sm-action__icon">
@@ -49,7 +158,7 @@ const Hero = () => {
                 {variant === "primary" && (
                   <ArrowRight size={16} aria-hidden="true" className="sm-action__arrow" />
                 )}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -61,11 +170,17 @@ const Hero = () => {
               <span className="sm-stats__tour">Virtual tour</span>
             </div>
 
-            <dl className="sm-stats__grid">
+            <dl className="sm-stats__grid" aria-live="polite">
               {stats.map((s) => (
                 <div key={s.label}>
                   <dt>{s.label}</dt>
-                  <dd>{s.value}</dd>
+                  <dd className="sm-stats__value">
+                    {loading && s.value === "—" ? (
+                      <Loader2 size={14} className="sm-spinner" aria-hidden="true" />
+                    ) : (
+                      s.value
+                    )}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -97,9 +212,9 @@ const Hero = () => {
                 <span>R</span>
                 <span>S</span>
               </div>
-              <a href="/doctors" className="sm-arrow" aria-label="Browse doctors">
+              <Link to="/doctors" className="sm-arrow" aria-label="Browse doctors">
                 <ArrowUpRight size={20} aria-hidden="true" />
-              </a>
+              </Link>
             </div>
           </div>
         </div>
