@@ -1,5 +1,5 @@
 const dotenv = require("dotenv");
-dotenv.config();
+dotenv.config(); // must run before anything that reads process.env
 
 const express = require("express");
 const cors = require("cors");
@@ -11,7 +11,7 @@ const app = express();
 app.set("trust proxy", 1);
 
 /* ------------------------------------------------------------------ */
-/*  CORS — allow local dev + deployed frontend                        */
+/*  CORS — local dev + deployed frontend                              */
 /* ------------------------------------------------------------------ */
 const allowedOrigins = [
   // Local development
@@ -50,16 +50,16 @@ const corsOptions = {
   credentials: true,
 };
 
+// This single line handles both regular requests AND OPTIONS preflight.
 app.use(cors(corsOptions));
-
-// Explicitly handle preflight
-app.options("*", cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static PUBLIC uploads only
+// Static PUBLIC uploads only (logos, photos).
+// private_uploads is intentionally NOT served; documents go through the
+// protected /api/admin/hospitals/:id/document endpoint.
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // ---------- Public / user routes ----------
@@ -100,12 +100,13 @@ app.get("/", (req, res) => {
   res.status(200).send("Server Running");
 });
 
-// Start server
+// Start server after database connection
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
     await dbConnection();
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
