@@ -143,23 +143,40 @@ exports.login = async (req, res) => {
     }
 
     // Hospital Admin must have an approved, active hospital.
-    if (existingUser.role === "hospital_admin") {
-      const Hospital = require("../models/Hospital");
 
-      const hospital = await Hospital.findOne({
-        _id: existingUser.hospitalId,
-        verificationStatus: "Verified",
-        isActive: true,
-        admin: existingUser._id,
-      });
+if (existingUser.role === "hospital_admin") {
+  const Hospital = require("../models/Hospital");
 
-      if (!hospital) {
-        return res.status(403).json({
-          success: false,
-          message: "Your hospital is not approved or active.",
-        });
-      }
-    }
+  if (!existingUser.hospitalId) {
+    return res.status(403).json({
+      success: false,
+      message: "No hospital is linked to your account.",
+    });
+  }
+
+  const hospital = await Hospital.findOne({
+    _id: existingUser.hospitalId,
+    admin: existingUser._id,
+  }).select("verificationStatus isActive");
+
+  if (!hospital) {
+    return res.status(403).json({
+      success: false,
+      message: "Hospital account linkage is invalid.",
+    });
+  }
+
+  if (
+    hospital.verificationStatus !== "Verified" ||
+    hospital.isActive !== true
+  ) {
+    return res.status(403).json({
+      success: false,
+      message: "Your hospital is not approved or active.",
+    });
+  }
+}
+
 
     const token = createToken(existingUser);
 

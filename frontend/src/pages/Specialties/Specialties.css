@@ -1,5 +1,10 @@
+/* ============================================================
+   Specialties Page — scoped under .sp-page
+   All design tokens live on .sp-page (no :root leaks)
+   ============================================================ */
 
 .sp-page {
+  /* ---- Tokens ---- */
   --sp-primary: #0f766e;
   --sp-primary-dark: #115e59;
   --sp-text: #173b3b;
@@ -7,30 +12,46 @@
   --sp-border: #e3eeed;
   --sp-bg: #f7fbfa;
 
-  min-height: 100vh;
+  /* ---- Layout ---- */
+  min-height: 100dvh;
   padding: 35px 6% 70px;
   background: #ffffff;
   color: var(--sp-text);
-  font-family: inherit;
+  font-family: var(--font-body, "DM Sans", system-ui, sans-serif);
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
-.sp-hero {
+.sp-page *,
+.sp-page *::before,
+.sp-page *::after {
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+
+.sp-page .sp-hero {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
   align-items: center;
   gap: 40px;
-  padding: 55px 55px;
+  padding: 55px;
   border-radius: 28px;
   background: linear-gradient(125deg, #eaf8f5, #f4f9ff);
   overflow: hidden;
 }
 
-.sp-hero-content {
+.sp-page .sp-hero-content {
   max-width: 650px;
+  min-width: 0;
 }
 
-.sp-eyebrow {
-  display: inline-block;
+.sp-page .sp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 14px;
   color: var(--sp-primary);
   font-size: 12px;
@@ -38,19 +59,20 @@
   letter-spacing: 1.5px;
 }
 
-.sp-hero h1 {
+.sp-page .sp-hero h1 {
   margin: 0;
   color: var(--sp-text);
   font-size: clamp(34px, 4vw, 54px);
   line-height: 1.15;
   letter-spacing: -1.5px;
+  overflow-wrap: anywhere;
 }
 
-.sp-hero h1 span {
+.sp-page .sp-hero h1 span {
   color: var(--sp-primary);
 }
 
-.sp-hero-content > p {
+.sp-page .sp-hero-content > p {
   max-width: 530px;
   margin: 20px 0 26px;
   color: #607574;
@@ -58,7 +80,8 @@
   line-height: 1.8;
 }
 
-.sp-search {
+/* ---- Search box ---- */
+.sp-page .sp-search {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -70,14 +93,15 @@
   border-radius: 12px;
   color: var(--sp-primary);
   box-shadow: 0 8px 25px rgba(15, 118, 110, 0.06);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.sp-search:focus-within {
+.sp-page .sp-search:focus-within {
   border-color: var(--sp-primary);
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
 }
 
-.sp-search input {
+.sp-page .sp-search input {
   width: 100%;
   height: 100%;
   border: none;
@@ -86,13 +110,88 @@
   color: var(--sp-text);
   font: inherit;
   font-size: 14px;
+  min-width: 0;
 }
 
-.sp-search input::placeholder {
+.sp-page .sp-search input::placeholder {
   color: #94a3b8;
 }
 
-.sp-hero-note {
+.sp-page .sp-kbd {
+  flex-shrink: 0;
+  min-width: 22px;
+  padding: 2px 6px;
+  border: 1px solid #dceae7;
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: #f7fbfa;
+  color: #64748b;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.sp-page .sp-clear-search {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 4px;
+  border: none;
+  border-radius: 50%;
+  background: #eef4f3;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sp-page .sp-clear-search:hover {
+  background: #dceae7;
+}
+
+.sp-page .sp-clear-search:focus-visible {
+  outline: 3px solid #8bd5c9;
+  outline-offset: 2px;
+}
+
+/* ---- Popular chips ---- */
+.sp-page .sp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 12px;
+  color: #54716e;
+}
+
+.sp-page .sp-chip {
+  padding: 6px 12px;
+  border: 1px solid #cfe3df;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--sp-primary-dark);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.sp-page .sp-chip:hover {
+  background: #ffffff;
+  border-color: var(--sp-primary);
+}
+
+.sp-page .sp-chip:focus-visible {
+  outline: 3px solid #8bd5c9;
+  outline-offset: 2px;
+}
+
+/* ---- Hero footnote ---- */
+.sp-page .sp-hero-note {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -101,12 +200,13 @@
   font-size: 13px;
 }
 
-.sp-hero-note svg {
+.sp-page .sp-hero-note svg {
   color: var(--sp-primary);
   flex-shrink: 0;
 }
 
-.sp-hero-visual {
+/* ---- Hero visual ---- */
+.sp-page .sp-hero-visual {
   position: relative;
   display: flex;
   align-items: center;
@@ -114,7 +214,7 @@
   min-height: 300px;
 }
 
-.sp-visual-circle {
+.sp-page .sp-visual-circle {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -129,7 +229,7 @@
     0 0 0 44px rgba(15, 118, 110, 0.025);
 }
 
-.sp-floating-card {
+.sp-page .sp-floating-card {
   position: absolute;
   display: flex;
   align-items: center;
@@ -139,44 +239,52 @@
   border: 1px solid #edf2f1;
   border-radius: 14px;
   box-shadow: 0 12px 35px rgba(23, 59, 59, 0.1);
+  max-width: calc(100% - 16px);
 }
 
-.sp-floating-card > svg {
+.sp-page .sp-floating-card > svg {
   color: var(--sp-primary);
   flex-shrink: 0;
 }
 
-.sp-floating-card div {
+.sp-page .sp-floating-card div {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
-.sp-floating-card strong {
+.sp-page .sp-floating-card strong {
   color: var(--sp-text);
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
-.sp-floating-card span {
+.sp-page .sp-floating-card span {
   color: var(--sp-muted);
   font-size: 11px;
 }
 
-.sp-floating-top {
+/* Positions: kept INSIDE the visual, clipped by .sp-hero overflow */
+.sp-page .sp-floating-top {
   top: 28px;
-  right: -5px;
+  right: 0;
 }
 
-.sp-floating-bottom {
+.sp-page .sp-floating-bottom {
   bottom: 25px;
-  left: -8px;
+  left: 0;
 }
 
-.sp-list-section {
+/* ============================================================
+   LIST SECTION
+   ============================================================ */
+
+.sp-page .sp-list-section {
   padding: 65px 0 45px;
 }
 
-.sp-section-heading {
+.sp-page .sp-section-heading {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -184,26 +292,52 @@
   margin-bottom: 30px;
 }
 
-.sp-section-heading .sp-eyebrow {
+.sp-page .sp-section-heading .sp-eyebrow {
   margin-bottom: 9px;
 }
 
-.sp-section-heading h2 {
+.sp-page .sp-section-heading h2 {
   margin: 0;
   color: var(--sp-text);
   font-size: clamp(26px, 3vw, 35px);
   letter-spacing: -0.7px;
 }
 
-.sp-section-heading p {
+.sp-page .sp-section-heading p {
   margin: 10px 0 0;
   color: var(--sp-muted);
   font-size: 14px;
   line-height: 1.6;
 }
 
-.sp-results-count {
+.sp-page .sp-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   flex-shrink: 0;
+}
+
+.sp-page .sp-sort select {
+  height: 36px;
+  padding: 0 32px 0 12px;
+  border: 1px solid var(--sp-border);
+  border-radius: 30px;
+  background: #ffffff;
+  color: var(--sp-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.sp-page .sp-sort select:focus-visible {
+  outline: 3px solid #8bd5c9;
+  outline-offset: 2px;
+}
+
+.sp-page .sp-results-count {
+  flex-shrink: 0;
+  min-width: 110px;
   padding: 9px 13px;
   border: 1px solid var(--sp-border);
   border-radius: 30px;
@@ -211,15 +345,34 @@
   background: #f3faf8;
   font-size: 12px;
   font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
 }
 
-.sp-grid {
+.sp-page .sp-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ============================================================
+   GRID & CARD  (single source — no more scattered rules)
+   ============================================================ */
+
+.sp-page .sp-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 22px;
 }
 
-.sp-card {
+.sp-page .sp-card {
+  /* Fallback accents — overwritten by inline style if color-mix unsupported */
+  --card-accent: var(--sp-primary);
+
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 230px;
@@ -227,19 +380,28 @@
   border: 1px solid var(--sp-border);
   border-radius: 18px;
   background: #ffffff;
+  animation: spFadeUp 0.45s ease both;
   transition:
     transform 0.25s ease,
     border-color 0.25s ease,
     box-shadow 0.25s ease;
 }
 
-.sp-card:hover {
+.sp-page .sp-card:hover {
   transform: translateY(-5px);
   border-color: #a7d8d0;
   box-shadow: 0 15px 35px rgba(15, 118, 110, 0.09);
 }
 
-.sp-card-top {
+/* If the browser supports color-mix, use the per-card accent on hover */
+@supports (color: color-mix(in srgb, red 10%, white)) {
+  .sp-page .sp-card:hover {
+    border-color: color-mix(in srgb, var(--card-accent) 35%, white);
+    box-shadow: 0 15px 35px color-mix(in srgb, var(--card-accent) 10%, transparent);
+  }
+}
+
+.sp-page .sp-card-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -247,23 +409,40 @@
   margin-bottom: 20px;
 }
 
-.sp-icon {
+.sp-page .sp-icon {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   width: 54px;
   height: 54px;
   border-radius: 15px;
+  /* Base colors — visible on EVERY browser */
   background: #eaf7f4;
   color: var(--sp-primary);
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
-.sp-card:hover .sp-icon {
+/* Accent-aware icon (progressive enhancement) */
+@supports (color: color-mix(in srgb, red 10%, white)) {
+  .sp-page .sp-icon {
+    background: color-mix(in srgb, var(--card-accent) 10%, white);
+    color: var(--card-accent);
+  }
+  .sp-page .sp-card:hover .sp-icon {
+    background: color-mix(in srgb, var(--card-accent) 18%, white);
+  }
+}
+
+/* Fallback hover (no color-mix) */
+.sp-page .sp-card:hover .sp-icon {
   background: #d9f0eb;
 }
 
-.sp-doctor-count {
+.sp-page .sp-doctor-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 7px 10px;
   border-radius: 20px;
   background: #f3f7f7;
@@ -273,14 +452,15 @@
   white-space: nowrap;
 }
 
-.sp-card h3 {
+.sp-page .sp-card h3 {
   margin: 0 0 9px;
   color: var(--sp-text);
   font-size: 18px;
   font-weight: 750;
+  overflow-wrap: anywhere;
 }
 
-.sp-card > p {
+.sp-page .sp-card > p {
   flex: 1;
   margin: 0 0 22px;
   color: var(--sp-muted);
@@ -288,7 +468,7 @@
   line-height: 1.7;
 }
 
-.sp-explore-btn {
+.sp-page .sp-explore-btn {
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -297,22 +477,37 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--sp-primary);
+  color: var(--sp-primary); /* fallback */
   font: inherit;
   font-size: 13px;
   font-weight: 750;
   cursor: pointer;
 }
 
-.sp-explore-btn svg {
+@supports (color: color-mix(in srgb, red 10%, white)) {
+  .sp-page .sp-explore-btn {
+    color: var(--card-accent);
+  }
+}
+
+.sp-page .sp-explore-btn svg {
   transition: transform 0.2s ease;
 }
 
-.sp-explore-btn:hover svg {
+.sp-page .sp-explore-btn:hover svg {
   transform: translateX(4px);
 }
 
-.sp-empty {
+.sp-page .sp-explore-btn:focus-visible {
+  outline: 3px solid #8bd5c9;
+  outline-offset: 4px;
+}
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+
+.sp-page .sp-empty {
   padding: 55px 20px;
   border: 1px dashed #cbdedb;
   border-radius: 18px;
@@ -320,20 +515,21 @@
   color: var(--sp-muted);
 }
 
-.sp-empty > svg {
+.sp-page .sp-empty > svg {
   color: var(--sp-primary);
 }
 
-.sp-empty h3 {
+.sp-page .sp-empty h3 {
   margin: 15px 0 8px;
   color: var(--sp-text);
+  overflow-wrap: anywhere;
 }
 
-.sp-empty p {
+.sp-page .sp-empty p {
   font-size: 14px;
 }
 
-.sp-empty button {
+.sp-page .sp-empty button {
   margin-top: 10px;
   padding: 10px 17px;
   border: none;
@@ -342,9 +538,65 @@
   color: #ffffff;
   font-weight: 650;
   cursor: pointer;
+  transition: background 0.2s ease;
 }
 
-.sp-cta {
+.sp-page .sp-empty button:hover {
+  background: var(--sp-primary-dark);
+}
+
+.sp-page .sp-empty button:focus-visible {
+  outline: 3px solid #8bd5c9;
+  outline-offset: 4px;
+}
+
+/* ============================================================
+   ERROR BANNER
+   ============================================================ */
+
+.sp-page .sp-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 12px 16px;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 13px;
+}
+
+.sp-page .sp-error-banner button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 5px 12px;
+  border: none;
+  border-radius: 7px;
+  background: #92400e;
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sp-page .sp-error-banner button:hover {
+  background: #78350f;
+}
+
+.sp-page .sp-error-banner button:focus-visible {
+  outline: 3px solid #8bd5c9;
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   CTA
+   ============================================================ */
+
+.sp-page .sp-cta {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -355,19 +607,19 @@
   color: #ffffff;
 }
 
-.sp-cta h2 {
+.sp-page .sp-cta h2 {
   margin: 0 0 9px;
   font-size: clamp(20px, 2.5vw, 27px);
 }
 
-.sp-cta p {
+.sp-page .sp-cta p {
   margin: 0;
   color: #c8e0dc;
   font-size: 14px;
   line-height: 1.7;
 }
 
-.sp-cta button {
+.sp-page .sp-cta button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -385,135 +637,154 @@
   transition: background 0.2s ease;
 }
 
-.sp-cta button:hover {
+.sp-page .sp-cta button:hover {
   background: #e6f5f1;
 }
 
-.sp-explore-btn:focus-visible,
-.sp-cta button:focus-visible,
-.sp-empty button:focus-visible {
+.sp-page .sp-cta button:focus-visible {
   outline: 3px solid #8bd5c9;
   outline-offset: 4px;
 }
 
+/* ============================================================
+   SKELETONS
+   ============================================================ */
+
+.sp-page .sp-skeletons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.sp-page .sp-skeleton-card {
+  padding: 24px;
+  border: 1px solid var(--sp-border);
+  border-radius: 18px;
+  background: #fff;
+  min-height: 230px;
+}
+
+.sp-page .sp-skeleton-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+  background: linear-gradient(90deg, #eef4f3 25%, #f7fbfa 50%, #eef4f3 75%);
+  background-size: 200% 100%;
+  animation: spShimmer 1.4s infinite;
+}
+
+.sp-page .sp-skeleton-line {
+  height: 12px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #eef4f3 25%, #f7fbfa 50%, #eef4f3 75%);
+  background-size: 200% 100%;
+  animation: spShimmer 1.4s infinite;
+}
+
+@keyframes spShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes spFadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
 @media (max-width: 1000px) {
-  .sp-hero {
+  .sp-page .sp-hero {
     grid-template-columns: 1fr 0.7fr;
     padding: 40px 32px;
     gap: 20px;
   }
-
-  .sp-visual-circle {
-    width: 190px;
-    height: 190px;
-  }
-
-  .sp-visual-circle svg {
-    width: 80px;
-    height: 80px;
-  }
-
-  .sp-floating-top {
-    right: -10px;
-  }
-
-  .sp-floating-bottom {
-    left: -10px;
-  }
-
-  .sp-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  .sp-page .sp-visual-circle { width: 190px; height: 190px; }
+  .sp-page .sp-visual-circle svg { width: 80px; height: 80px; }
+  .sp-page .sp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sp-page .sp-skeletons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 680px) {
-  .sp-page {
-    padding: 20px 16px 45px;
-  }
+  .sp-page { padding: 20px 16px 45px; }
 
-  .sp-hero {
+  .sp-page .sp-hero {
     grid-template-columns: 1fr;
     padding: 32px 22px;
     border-radius: 20px;
   }
+  .sp-page .sp-hero h1 { font-size: 36px; letter-spacing: -1px; }
+  .sp-page .sp-hero-content > p { font-size: 14px; }
 
-  .sp-hero h1 {
-    font-size: 36px;
-  }
+  .sp-page .sp-hero-visual { min-height: 230px; margin: 10px 0 5px; }
+  .sp-page .sp-visual-circle { width: 160px; height: 160px; }
+  .sp-page .sp-visual-circle svg { width: 70px; height: 70px; }
 
-  .sp-hero-content > p {
-    font-size: 14px;
-  }
+  .sp-page .sp-floating-top { top: 10px; right: 0; }
+  .sp-page .sp-floating-bottom { bottom: 8px; left: 0; }
+  .sp-page .sp-floating-card { padding: 11px 12px; }
 
-  .sp-hero-visual {
-    min-height: 230px;
-    margin: 10px 0 5px;
-  }
+  .sp-page .sp-kbd { display: none; }
 
-  .sp-visual-circle {
-    width: 160px;
-    height: 160px;
-  }
+  .sp-page .sp-list-section { padding: 45px 0 30px; }
 
-  .sp-visual-circle svg {
-    width: 70px;
-    height: 70px;
-  }
-
-  .sp-floating-top {
-    top: 10px;
-    right: 0;
-  }
-
-  .sp-floating-bottom {
-    bottom: 8px;
-    left: 0;
-  }
-
-  .sp-floating-card {
-    padding: 11px 12px;
-  }
-
-  .sp-list-section {
-    padding: 45px 0 30px;
-  }
-
-  .sp-section-heading {
+  .sp-page .sp-section-heading {
     align-items: flex-start;
     flex-direction: column;
     gap: 15px;
   }
 
-  .sp-grid {
-    grid-template-columns: 1fr;
-    gap: 15px;
+  .sp-page .sp-heading-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
-  .sp-card {
-    min-height: 210px;
-    padding: 21px;
-  }
+  .sp-page .sp-sort { flex: 1; }
+  .sp-page .sp-sort select { width: 100%; }
 
-  .sp-cta {
+  .sp-page .sp-grid { grid-template-columns: 1fr; gap: 15px; }
+  .sp-page .sp-skeletons { grid-template-columns: 1fr; gap: 15px; }
+  .sp-page .sp-card { min-height: 210px; padding: 21px; }
+
+  .sp-page .sp-cta {
     align-items: flex-start;
     flex-direction: column;
     padding: 26px 22px;
   }
-
-  .sp-cta button {
-    width: 100%;
-  }
+  .sp-page .sp-cta button { width: 100%; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .sp-card,
-  .sp-icon,
-  .sp-explore-btn svg,
-  .sp-cta button {
-    transition: none;
-  }
+@media (max-width: 400px) {
+  .sp-page .sp-hero h1 { font-size: 30px; }
+  .sp-page .sp-hero { padding: 26px 18px; }
+  .sp-page .sp-card { padding: 18px; }
+}
 
-  .sp-card:hover {
+/* ============================================================
+   REDUCED MOTION — kills all animations
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-page *,
+  .sp-page *::before,
+  .sp-page *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .sp-page .sp-card,
+  .sp-page .sp-skeleton-icon,
+  .sp-page .sp-skeleton-line {
+    animation: none;
+  }
+  .sp-page .sp-card:hover,
+  .sp-page .sp-explore-btn:hover svg,
+  .sp-page .sp-cta button:hover {
     transform: none;
   }
 }

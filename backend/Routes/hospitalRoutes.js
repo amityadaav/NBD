@@ -1,48 +1,53 @@
 
+// const express = require("express");
+// const router = express.Router();
+
+// const { authenticate } = require("../middleware/authMiddleware");
+// const { allowRoles } = require("../middleware/roleMiddleware");
+
+// const {
+//   createDoctor,
+// } = require("../controllers/DoctorController");
+
+// router.post(
+//   "/",
+//   authenticate,
+//   allowRoles("hospital_admin", "super_admin"),
+//   createDoctor
+// );
+
+// module.exports = router;
 const express = require("express");
 const router = express.Router();
+
+const { authenticate } = require("../middleware/authMiddleware");
+const { allowRoles } = require("../middleware/roleMiddleware");
+const { hospitalRegistrationUpload } = require("../middleware/hospitalUpload");
 
 const {
   registerHospital,
   getAllHospitals,
   getHospitalById,
+  getMyHospital,
   updateHospital,
   deleteHospital,
 } = require("../controllers/hospitalController");
 
-const { authenticate } = require("../middleware/authMiddleware");
-const { allowRoles } = require("../middleware/roleMiddleware");
-const { hospitalRegistrationUpload } = require("../middleware/upload");
-
-// Register hospital application.
-// The controller links it to the authenticated applicant.
-router.post(
-  "/register",
-  authenticate,
-  hospitalRegistrationUpload,
-  registerHospital
-);
-
-// Public listing: controller must return verified, active hospitals only.
+// Public list of verified hospitals
 router.get("/", getAllHospitals);
 
-// Public details: controller must return verified, active hospitals only.
+// Logged-in applicant: register (multipart). Order matters:
+// authenticate -> multer -> controller
+router.post("/register", authenticate, hospitalRegistrationUpload, registerHospital);
+
+// Must be declared before "/:id"
+router.get("/my", authenticate, getMyHospital);
+
 router.get("/:id", getHospitalById);
 
-// Hospital Admin can update only their own approved hospital.
-router.put(
-  "/:id",
-  authenticate,
-  allowRoles("hospital_admin"),
-  updateHospital
-);
+// Hospital admin edits their own hospital; super admin can edit any hospital
+router.patch("/:id", authenticate, allowRoles("hospital_admin", "super_admin"), updateHospital);
 
-// Deletion is blocked by the controller; no public delete access.
-router.delete(
-  "/:id",
-  authenticate,
-  allowRoles("super_admin"),
-  deleteHospital
-);
+router.delete("/:id", authenticate, allowRoles("super_admin"), deleteHospital);
 
 module.exports = router;

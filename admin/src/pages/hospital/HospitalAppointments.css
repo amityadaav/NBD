@@ -1,0 +1,985 @@
+/* ============================================================
+   Hospital Appointments — Refined UI
+   ============================================================ */
+
+.ha-page {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  color: var(--foreground);
+  background: var(--background);
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  animation: ha-fade-in 0.3s ease;
+}
+
+.ha-page * { box-sizing: border-box; }
+
+@keyframes ha-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ha-spin { to { transform: rotate(360deg); } }
+.ha-spin { animation: ha-spin 0.9s linear infinite; }
+
+/* ---------- Page header (hero band) ---------- */
+.ha-page-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+  padding: 24px 28px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 90% 0%, rgba(255, 255, 255, 0.18), transparent 55%),
+    linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  color: #fff;
+  box-shadow: 0 12px 32px -12px rgba(15, 118, 110, 0.45);
+}
+
+.ha-header-left { min-width: 0; position: relative; z-index: 1; }
+
+.ha-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ha-page-header h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.ha-page-header p {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* ---------- Icon button (base) ---------- */
+.ha-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ha-icon-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: hsl(168 45% 97%);
+}
+.ha-icon-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Glass variant inside the hero band */
+.ha-page-header .ha-icon-btn {
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+.ha-page-header .ha-icon-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.55);
+  color: #fff;
+}
+
+/* ---------- Messages ---------- */
+.ha-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 500;
+  animation: ha-slide-down 0.25s ease;
+}
+.ha-message svg { flex-shrink: 0; }
+
+@keyframes ha-slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ha-message-error {
+  border-color: hsl(0 84% 88%);
+  background: hsl(0 84% 97%);
+  color: var(--destructive);
+}
+.ha-message-success {
+  border-color: hsl(150 55% 82%);
+  background: hsl(150 55% 96%);
+  color: hsl(152 55% 30%);
+}
+
+/* ---------- Stat cards ---------- */
+.ha-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.ha-stat-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  animation: ha-rise 0.4s ease both;
+}
+.ha-stat-card:nth-child(1) { animation-delay: 0ms; }
+.ha-stat-card:nth-child(2) { animation-delay: 60ms; }
+.ha-stat-card:nth-child(3) { animation-delay: 120ms; }
+.ha-stat-card:nth-child(4) { animation-delay: 180ms; }
+
+@keyframes ha-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ha-stat-card:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.ha-stat-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.ha-icon-teal {
+  background: linear-gradient(135deg, hsl(168 45% 96%), hsl(168 45% 90%));
+  color: var(--primary);
+  border: 1px solid hsl(168 45% 86%);
+}
+.ha-icon-orange {
+  background: linear-gradient(135deg, hsl(30 90% 96%), hsl(30 90% 90%));
+  color: hsl(24 80% 45%);
+  border: 1px solid hsl(30 90% 86%);
+}
+.ha-icon-blue {
+  background: linear-gradient(135deg, hsl(205 78% 96%), hsl(205 78% 90%));
+  color: hsl(205 78% 38%);
+  border: 1px solid hsl(205 78% 86%);
+}
+.ha-icon-green {
+  background: linear-gradient(135deg, hsl(150 55% 96%), hsl(150 55% 90%));
+  color: hsl(152 55% 32%);
+  border: 1px solid hsl(150 55% 84%);
+}
+
+.ha-stat-body p {
+  margin: 0 0 4px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ha-stat-body h3 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.ha-stat-meta {
+  display: block;
+  margin-top: 5px;
+  color: hsl(152 55% 32%);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+/* ---------- Panel ---------- */
+.ha-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--card-shadow);
+}
+
+.ha-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #fff, hsl(210 33% 99%));
+}
+
+.ha-panel-header h3 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ha-panel-header p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+}
+.ha-filter-hint { color: var(--primary); font-weight: 600; }
+
+.ha-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.ha-clear-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: hsl(168 45% 97%);
+}
+
+/* ---------- Filters ---------- */
+.ha-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: hsl(210 33% 99%);
+}
+
+.ha-date-filter {
+  min-height: 40px;
+  min-width: 160px;
+  padding: 0 12px;
+  border: 1px solid var(--input);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 13px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ha-select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ha-select-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+.ha-select-wrap select {
+  min-height: 40px;
+  min-width: 175px;
+  padding: 0 12px 0 34px;
+  border: 1px solid var(--input);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ha-date-filter:focus,
+.ha-select-wrap select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px hsl(168 45% 45% / 0.12);
+}
+
+/* ---------- Table ---------- */
+.ha-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(210 20% 82%) transparent;
+}
+.ha-table-wrapper::-webkit-scrollbar { height: 8px; }
+.ha-table-wrapper::-webkit-scrollbar-thumb {
+  background: hsl(210 20% 84%);
+  border-radius: 999px;
+}
+.ha-table-wrapper::-webkit-scrollbar-track { background: transparent; }
+
+.ha-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ha-table thead th {
+  padding: 12px 16px;
+  background: hsl(210 33% 97%);
+  color: var(--muted-foreground);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border);
+}
+
+.ha-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.ha-table tbody tr { transition: background 0.12s ease; }
+.ha-table tbody tr:hover { background: var(--accent); }
+.ha-table tbody tr:last-child td { border-bottom: none; }
+
+/* Skeleton rows */
+.ha-skeleton-line {
+  height: 18px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    hsl(210 20% 94%) 25%,
+    hsl(210 20% 97%) 37%,
+    hsl(210 20% 94%) 63%
+  );
+  background-size: 400% 100%;
+  animation: ha-shimmer 1.4s ease infinite;
+}
+@keyframes ha-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+.ha-appointment-id {
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Person cells ---------- */
+.ha-person-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ha-person-avatar,
+.ha-doctor-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.ha-person-avatar {
+  background: linear-gradient(135deg, hsl(205 78% 96%), hsl(205 78% 88%));
+  color: hsl(205 78% 38%);
+  border: 1px solid hsl(205 78% 86%);
+}
+
+.ha-doctor-avatar {
+  background: linear-gradient(135deg, hsl(168 45% 96%), hsl(168 45% 88%));
+  color: var(--primary);
+  border: 1px solid hsl(168 45% 84%);
+}
+
+.ha-person-meta { min-width: 0; }
+.ha-person-meta strong {
+  display: block;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.ha-person-meta small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted-foreground);
+  font-size: 11.5px;
+  line-height: 1.3;
+}
+
+.ha-date-text {
+  display: block;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.ha-time {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  color: var(--muted-foreground);
+  font-size: 11.5px;
+  line-height: 1.3;
+}
+.ha-time svg { opacity: 0.7; }
+
+/* ---------- Type pill ---------- */
+.ha-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: hsl(210 33% 96%);
+  color: var(--muted-foreground);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.ha-type-video {
+  background: hsl(205 78% 96%);
+  color: hsl(205 78% 38%);
+}
+
+/* ---------- Fee ---------- */
+.ha-fee {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ha-fee svg { color: var(--muted-foreground); }
+
+/* ---------- Status pills ---------- */
+.ha-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.ha-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.ha-status-pending {
+  border-color: hsl(38 92% 82%);
+  background: hsl(38 92% 96%);
+  color: hsl(28 80% 38%);
+}
+.ha-status-confirmed {
+  border-color: hsl(205 78% 86%);
+  background: hsl(205 78% 96%);
+  color: hsl(205 78% 36%);
+}
+.ha-status-completed {
+  border-color: hsl(150 55% 82%);
+  background: hsl(150 55% 96%);
+  color: hsl(152 55% 30%);
+}
+.ha-status-cancelled {
+  border-color: hsl(0 84% 88%);
+  background: hsl(0 84% 97%);
+  color: hsl(0 72% 44%);
+}
+
+/* ---------- View button ---------- */
+.ha-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid hsl(168 45% 82%);
+  border-radius: 7px;
+  background: hsl(168 45% 97%);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ha-view-btn:hover {
+  background: hsl(168 45% 92%);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+/* ---------- Empty state ---------- */
+.ha-empty {
+  padding: 48px 20px !important;
+  text-align: center;
+  color: var(--muted-foreground) !important;
+  font-size: 13px;
+}
+.ha-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.ha-empty-state svg { opacity: 0.4; margin-bottom: 4px; }
+.ha-empty-state p {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ha-empty-state small { font-size: 12px; }
+
+/* ---------- Pagination ---------- */
+.ha-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 18px;
+  border-top: 1px solid var(--border);
+  background: hsl(210 33% 99%);
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+.ha-pager button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--foreground);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ha-pager button:hover:not(:disabled) {
+  background: var(--muted);
+  border-color: hsl(210 20% 82%);
+}
+.ha-pager button:disabled { opacity: 0.45; cursor: not-allowed; }
+.ha-pager-label strong { color: var(--foreground); }
+
+/* ---------- Modal ---------- */
+.ha-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  animation: ha-fade-in 0.18s ease;
+}
+
+.ha-modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: 0 24px 64px -12px rgba(15, 23, 42, 0.28);
+  animation: ha-slide-up 0.22s ease;
+}
+
+@keyframes ha-slide-up {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---------- Modal hero ---------- */
+.ha-modal-hero {
+  position: relative;
+  padding: 20px 24px;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(255, 255, 255, 0.5), transparent 55%),
+    linear-gradient(135deg, hsl(168 45% 97%), hsl(168 45% 92%));
+  border-bottom: 1px solid var(--border);
+}
+
+.ha-modal-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 14px;
+}
+
+.ha-modal-eyebrow {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.ha-modal-hero h3 {
+  margin: 0;
+  color: var(--primary);
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ha-modal-hero-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ha-modal-hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ha-hero-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+.ha-hero-stat svg { color: var(--primary); }
+.ha-hero-stat strong { font-weight: 600; }
+
+.ha-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ha-close-btn:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+.ha-close-floating { background: rgba(255, 255, 255, 0.85); }
+.ha-close-floating:hover { background: #fff; }
+
+/* ---------- Modal body ---------- */
+.ha-modal-body {
+  padding: 20px 24px;
+}
+
+.ha-modal-section {
+  margin-bottom: 18px;
+}
+.ha-modal-section:last-child { margin-bottom: 0; }
+
+.ha-modal-section h5 {
+  margin: 0 0 8px;
+  color: var(--muted-foreground);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ha-modal-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: hsl(210 33% 99%);
+}
+
+.ha-person-avatar-lg,
+.ha-doctor-avatar.ha-person-avatar-lg {
+  width: 44px;
+  height: 44px;
+  font-size: 13px;
+}
+
+.ha-modal-person strong {
+  display: block;
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.ha-contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.ha-contact-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ha-reason-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: hsl(210 33% 99%);
+}
+.ha-reason-box svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--primary);
+}
+.ha-reason-box p {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.ha-modal-fee {
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.ha-fee-large {
+  display: block;
+  margin-top: 4px;
+  color: var(--primary);
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Modal actions ---------- */
+.ha-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 24px;
+  border-top: 1px solid var(--border);
+  background: hsl(210 33% 99%);
+}
+
+.ha-confirm-btn,
+.ha-complete-btn,
+.ha-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ha-confirm-btn,
+.ha-complete-btn {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 1px 2px rgba(15, 118, 110, 0.2);
+}
+.ha-confirm-btn:hover:not(:disabled),
+.ha-complete-btn:hover:not(:disabled) {
+  background: hsl(168 60% 28%);
+  box-shadow: 0 2px 6px rgba(15, 118, 110, 0.3);
+}
+
+.ha-cancel-btn {
+  background: var(--card);
+  border-color: hsl(0 84% 80%);
+  color: var(--destructive);
+}
+.ha-cancel-btn:hover:not(:disabled) {
+  background: hsl(0 84% 97%);
+}
+
+.ha-modal-actions button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ---------- Inline cancel confirmation ---------- */
+.ha-confirm-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+  flex-wrap: wrap;
+}
+
+.ha-confirm-cancel-text {
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.ha-secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ha-secondary-btn:hover:not(:disabled) {
+  background: var(--muted);
+  border-color: hsl(210 20% 82%);
+}
+.ha-secondary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .ha-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .ha-page { padding: 20px 14px 36px; }
+
+  .ha-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+  }
+
+  .ha-filters { flex-direction: column; align-items: stretch; padding: 14px 16px; }
+  .ha-date-filter,
+  .ha-select-wrap,
+  .ha-select-wrap select { width: 100%; min-width: 0; }
+  .ha-panel-header { padding: 16px; flex-direction: column; align-items: flex-start; }
+  .ha-modal-actions { flex-direction: column; }
+  .ha-confirm-btn,
+  .ha-complete-btn,
+  .ha-cancel-btn,
+  .ha-secondary-btn { width: 100%; }
+  .ha-confirm-cancel {
+    flex-direction: column;
+    align-items: stretch;
+    margin-right: 0;
+    width: 100%;
+  }
+  .ha-confirm-cancel-text { text-align: center; padding: 4px 0; }
+  .ha-modal-hero-stats { gap: 6px; }
+  .ha-hero-stat { font-size: 11.5px; }
+}
+
+@media (max-width: 420px) {
+  .ha-stats { grid-template-columns: 1fr; }
+  .ha-stat-card { padding: 16px; }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ha-page,
+  .ha-page *,
+  .ha-page *::before,
+  .ha-page *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

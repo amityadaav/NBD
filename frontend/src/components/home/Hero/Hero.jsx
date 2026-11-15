@@ -1,233 +1,109 @@
-import { ShieldCheck, Search, CalendarCheck, ArrowRight } from "lucide-react";
-import {
-  motion,
-  AnimatePresence,
-  animate,
-  useInView,
-  useReducedMotion,
-} from "framer-motion";
-import { useEffect, useRef, useState } from "react";
-
-import heroImage1 from "../../../assets/images/hero-doctors.jpg";
-import heroImage2 from "../../../assets/images/heroImage1.png";
-import heroImage3 from "../../../assets/images/heroImage2.png";
-import heroImage4 from "../../../assets/images/heroImage3.png";
-import heroImage5 from "../../../assets/images/heroImage4.png";
-
+import { ArrowRight, ArrowUpRight, Play, Stethoscope, HeartPulse, UserRound } from "lucide-react";
 import "./Hero.css";
+import heroImage from "../../../assets/images/HealthcareTeams.png";
 
-const slides = [heroImage1, heroImage2, heroImage3,heroImage4,heroImage5];
-const SLIDE_DURATION = 5000; // keep in sync with --slide-duration in Hero.css
-
-const stats = [
-  { value: 5000, suffix: "+", label: "Verified doctors" },
-  { value: 50, suffix: "K+", label: "Happy patients" },
-  { value: 200, suffix: "+", label: "Specialties" },
+const actions = [
+  { href: "/doctors", label: "Find a doctor", Icon: Stethoscope, variant: "primary" },
+  { href: "/donate-blood", label: "Donate blood", Icon: HeartPulse, variant: "blood" },
 ];
 
-const titleWords = ["Find", "the", "Right", "Doctor"];
+const stats = [
+  { value: "10k+", label: "Happy patients" },
+  { value: "500+", label: "Verified doctors" },
+  { value: "4.8", label: "Average rating" },
+];
 
-/* ---------- Count-up number ---------- */
-const CountUp = ({ value, suffix = "" }) => {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true });
-  const reduce = useReducedMotion();
-  const [display, setDisplay] = useState(reduce ? value : 0);
-
-  useEffect(() => {
-    if (!inView || reduce) return;
-    const controls = animate(0, value, {
-      duration: 1.8,
-      delay: 0.9,
-      ease: [0.16, 1, 0.3, 1],
-      onUpdate: (v) => setDisplay(Math.round(v)),
-    });
-    return () => controls.stop();
-  }, [inView, value, reduce]);
-
-  return (
-    <span ref={ref}>
-      {display.toLocaleString("en-US")}
-      {suffix}
-    </span>
-  );
-};
-
-/* ---------- Hero ---------- */
 const Hero = () => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const reduce = useReducedMotion();
-
-  // Timer resets whenever the slide changes (including manual clicks),
-  // so the progress bar and the slide change always stay in sync.
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, SLIDE_DURATION);
-    return () => clearTimeout(timeout);
-  }, [currentSlide]);
-
-  const ease = [0.16, 1, 0.3, 1];
-
   return (
-    <section className="hero">
-      {/* Background slider */}
-{/* Background slider */}
-<div className="hero-bg" aria-hidden="true">
-  <motion.div
-    className="hero-slider-track"
-    animate={{x: `-${currentSlide * (100 / slides.length)}%`,}}
-    transition={{
-      duration: reduce ? 0 : 0.8,
-      ease: [0.22, 1, 0.36, 1],
-    }}
-  >
-    {slides.map((image, index) => (
-      <div className="hero-slide" key={image}>
-        <img
-          src={image}
-          alt=""
-          className="hero-image"
-          draggable="false"
-        />
-      </div>
-    ))}
-  </motion.div>
+    <section className="sm-hero">
+      <div className="sm-stage">
+        <div className="sm-panel" aria-hidden="true" />
 
-  <div className="hero-overlay" />
-  <div className="hero-glow hero-glow-a" />
-  <div className="hero-glow hero-glow-b" />
-  <div className="hero-grain" />
-</div>
+        {/* LEFT */}
+        <div className="sm-left">
+<h1 className="sm-title">
+  Your Trusted
+  <span className="sm-title__line">
+    Healthcare<span className="sm-orb" aria-hidden="true" />Partner.
+  </span>
+</h1>
 
-      {/* Content */}
-      <div className="hero-container">
-        <div className="hero-content">
-          <motion.div
-            className="hero-badge"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease }}
-          >
-            <span className="hero-badge-icon">
-              <ShieldCheck size={14} />
-            </span>
-            <span>Trusted by 50,000+ patients</span>
-          </motion.div>
+<p className="sm-tagline">
+  Find trusted doctors near you, explore verified specialists,
+  and book appointments effortlessly. Your health deserves
+  the right care.
+</p>
 
-          <h1 className="hero-title" aria-label="Find the Right Doctor Near You">
-            <span className="hero-title-line" aria-hidden="true">
-              {titleWords.map((word, i) => (
-                <span className="word-mask" key={word}>
-                  <motion.span
-                    className="word"
-                    initial={{ y: "110%", rotate: 4 }}
-                    animate={{ y: 0, rotate: 0 }}
-                    transition={{ duration: 0.8, delay: 0.15 + i * 0.09, ease }}
-                  >
-                    {word}
-                  </motion.span>
-                </span>
-              ))}
-            </span>
-            <span className="hero-title-accent" aria-hidden="true">
-              <span className="word-mask">
-                <motion.span
-                  className="word"
-                  initial={{ y: "110%", rotate: 4 }}
-                  animate={{ y: 0, rotate: 0 }}
-                  transition={{ duration: 0.9, delay: 0.55, ease }}
-                >
-                  Near You
-                </motion.span>
-              </span>
-            </span>
-          </h1>
-
-          <motion.p
-            className="hero-subtitle"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.7, ease }}
-          >
-            Discover verified doctors, explore specialties, and book
-            appointments with confidence — all in one place.
-          </motion.p>
-
-          <motion.div
-            className="hero-actions"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.85, ease }}
-          >
-            <a href="/doctors" className="btn btn-primary">
-              <Search size={18} />
-              Find a doctor
-              <ArrowRight size={18} className="btn-arrow" />
-            </a>
-            <a href="/specialties" className="btn btn-ghost">
-              Browse specialties
-            </a>
-          </motion.div>
-
-          <motion.div
-            className="hero-stats"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 1 }}
-          >
-            {stats.map((s, i) => (
-              <div className="stat-wrap" key={s.label}>
-                {i > 0 && <div className="stat-divider" />}
-                <div className="stat">
-                  <h3>
-                    <CountUp value={s.value} suffix={s.suffix} />
-                  </h3>
-                  <p>{s.label}</p>
-                </div>
-              </div>
-            ))}
-          </motion.div>
-
-          {/* Slider indicators with progress */}
-          <div className="hero-slider-dots">
-            {slides.map((_, index) => (
-              <button
-                key={index}
-                type="button"
-                className={`hero-dot ${currentSlide === index ? "active" : ""}`}
-                onClick={() => setCurrentSlide(index)}
-                aria-label={`Show background image ${index + 1}`}
-                aria-pressed={currentSlide === index}
+          <div className="sm-actions">
+            {actions.map(({ href, label, Icon, variant }) => (
+              <a
+                key={label}
+                href={href}
+                className={`sm-action${variant ? ` sm-action--${variant}` : ""}`}
               >
-                <span className="hero-dot-fill" key={`${index}-${currentSlide}`} />
-              </button>
+                <span className="sm-action__icon">
+                  <Icon size={18} aria-hidden="true" />
+                </span>
+                {label}
+                {variant === "primary" && (
+                  <ArrowRight size={16} aria-hidden="true" className="sm-action__arrow" />
+                )}
+              </a>
             ))}
+          </div>
+
+          <div className="sm-stats">
+            <div className="sm-stats__thumb">
+              <button type="button" className="sm-stats__play" aria-label="Play virtual tour">
+                <Play size={14} fill="currentColor" aria-hidden="true" />
+              </button>
+              <span className="sm-stats__tour">Virtual tour</span>
+            </div>
+
+            <dl className="sm-stats__grid">
+              {stats.map((s) => (
+                <div key={s.label}>
+                  <dt>{s.label}</dt>
+                  <dd>{s.value}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </div>
 
-        {/* Floating glass card (desktop only) */}
-        <motion.aside
-          className="hero-card"
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.9, delay: 1.1, ease }}
-          aria-hidden="true"
-        >
-          <div className="hero-card-float">
-            <div className="hero-card-icon">
-              <CalendarCheck size={22} />
-            </div>
-            <div>
-              <p className="hero-card-label">Next available</p>
-              <p className="hero-card-value">Today, 4:30 PM</p>
-            </div>
-            <span className="hero-card-live">
-              <span className="hero-card-pulse" />
-              Live
-            </span>
+        {/* CENTER */}
+        <img src={heroImage} alt="Our doctors" className="sm-person" />
+
+        <span className="sm-chip sm-chip--1">Reliable</span>
+        <span className="sm-chip sm-chip--2">Experienced</span>
+        <span className="sm-chip sm-chip--3">Professional</span>
+
+        {/* RIGHT */}
+        <div className="sm-right">
+          <div className="sm-right__top">
+            <h2>Verified specialists, ready to see you</h2>
+            <p>
+              Every doctor is background-checked and reviewed by real
+              patients. Pick a time, no phone calls needed.
+            </p>
           </div>
-        </motion.aside>
+
+          <div className="sm-right__bottom">
+            <p className="sm-feedback">
+              Every review helps us improve.
+            </p>
+            <div className="sm-right__row">
+              <div className="sm-avatars" aria-hidden="true">
+                <span>A</span>
+                <span>R</span>
+                <span>S</span>
+              </div>
+              <a href="/doctors" className="sm-arrow" aria-label="Browse doctors">
+                <ArrowUpRight size={20} aria-hidden="true" />
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

@@ -1,65 +1,89 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Heart,
-  Brain,
-  Eye,
-  Bone,
-  Baby,
-  Stethoscope,
-  Pill,
-  Activity,
-  ArrowRight,
+  Heart, Brain, Eye, Bone, Baby, Stethoscope, Pill, Activity,
+  ArrowRight, Ear, Syringe, Scan, HelpCircle, Cross
 } from "lucide-react";
 import { motion } from "framer-motion";
 import "./SpecialtiesSection.css";
 
-const specialties = [
-  {
-    icon: Heart,
-    name: "Cardiology",
-    count: "320 Doctors",
-  },
-  {
-    icon: Brain,
-    name: "Neurology",
-    count: "185 Doctors",
-  },
-  {
-    icon: Eye,
-    name: "Ophthalmology",
-    count: "240 Doctors",
-  },
-  {
-    icon: Bone,
-    name: "Orthopedics",
-    count: "290 Doctors",
-  },
-  {
-    icon: Baby,
-    name: "Pediatrics",
-    count: "410 Doctors",
-  },
-  {
-    icon: Stethoscope,
-    name: "General Physician",
-    count: "520 Doctors",
-  },
-  {
-    icon: Pill,
-    name: "Dermatology",
-    count: "175 Doctors",
-  },
-  {
-    icon: Activity,
-    name: "Dentistry",
-    count: "380 Doctors",
-  },
+// The exact specialties used in your database
+const SPECIALTY_NAMES = [
+  "General Medicine", "Cardiology", "Dermatology", "Dentistry", "Neurology",
+  "Orthopedics", "Pediatrics", "Gynecology", "Ophthalmology", "Oncology",
+  "Psychiatry", "Urology", "ENT", "Radiology", "Other",
 ];
 
+// Map icon to each specific specialty name
+const ICON_MAP = {
+  "General Medicine": Stethoscope,
+  "Cardiology": Heart,
+  "Dermatology": Pill,
+  "Dentistry": Activity,
+  "Neurology": Brain,
+  "Orthopedics": Bone,
+  "Pediatrics": Baby,
+  "Gynecology": Baby,
+  "Ophthalmology": Eye,
+  "Oncology": Activity,
+  "Psychiatry": Brain,
+  "Urology": Syringe,
+  "ENT": Ear,
+  "Radiology": Scan,
+  "Other": HelpCircle,
+};
+
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
+const DOCTORS_ENDPOINT = `${API_URL.endsWith("/api") ? API_URL : `${API_URL}/api`}/doctors`;
+
 const SpecialtiesSection = () => {
+  const navigate = useNavigate();
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch real doctors data
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(DOCTORS_ENDPOINT);
+        const result = await response.json();
+        if (!response.ok) throw new Error("Failed to fetch");
+        setDoctors(Array.isArray(result) ? result : result.doctors || []);
+      } catch (err) {
+        console.error("Specialties count fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDoctors();
+  }, []);
+
+  // Build dynamic list with exact counts from the doctors array
+  const specialtiesWithCounts = useMemo(() => {
+    return SPECIALTY_NAMES.map((name) => {
+      // Count doctors whose specialty matches exactly (ignoring case)
+      const count = doctors.filter((doc) => {
+        if (!doc.specialty) return false;
+        return doc.specialty.trim().toLowerCase() === name.toLowerCase();
+      }).length;
+
+      return {
+        name,
+        count,
+        icon: ICON_MAP[name] || Stethoscope,
+      };
+    });
+  }, [doctors]);
+
+  const handleCardClick = (specialtyName) => {
+    // Navigate to FindDoctors page and pass specialty as a query parameter
+    navigate(`/find-doctors?specialty=${encodeURIComponent(specialtyName)}`);
+  };
+
   return (
     <section id="specialties" className="specialties-section">
       <div className="specialties-container">
-
         {/* Header */}
         <motion.div
           className="specialties-header"
@@ -69,19 +93,17 @@ const SpecialtiesSection = () => {
           transition={{ duration: 0.6 }}
         >
           <div className="specialties-heading">
-
             <h2>
               Browse by <span>Specialty</span>
             </h2>
-
             <p>
-              Explore experienced doctors across different
-              medical specialties.
+              Explore experienced doctors across different medical specialties.
             </p>
           </div>
 
           <motion.button
             className="specialties-view-all"
+            onClick={() => navigate("/find-doctors")}
             whileHover={{ x: 4 }}
             whileTap={{ scale: 0.97 }}
           >
@@ -92,24 +114,19 @@ const SpecialtiesSection = () => {
 
         {/* Grid */}
         <div className="specialties-grid">
-          {specialties.map((spec, index) => {
+          {specialtiesWithCounts.map((spec, index) => {
             const Icon = spec.icon;
 
             return (
               <motion.article
                 key={spec.name}
                 className="specialty-card"
+                onClick={() => handleCardClick(spec.name)}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
-                transition={{
-                  duration: 0.5,
-                  delay: index * 0.07,
-                }}
-                whileHover={{
-                  y: -7,
-                  transition: { duration: 0.25 },
-                }}
+                transition={{ duration: 0.5, delay: index * 0.07 }}
+                whileHover={{ y: -7, transition: { duration: 0.25 } }}
               >
                 {/* Number */}
                 <span className="specialty-number">
@@ -119,42 +136,32 @@ const SpecialtiesSection = () => {
                 {/* Icon */}
                 <motion.div
                   className="specialty-icon"
-                  whileHover={{
-                    scale: 1.1,
-                    rotate: -6,
-                  }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 300,
-                  }}
+                  whileHover={{ scale: 1.1, rotate: -6 }}
+                  transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <Icon
-                    size={24}
-                    strokeWidth={1.8}
-                  />
+                  <Icon size={24} strokeWidth={1.8} />
                 </motion.div>
 
                 {/* Content */}
                 <div className="specialty-content">
                   <h3>{spec.name}</h3>
-
-                  <p>{spec.count}</p>
+                  {loading ? (
+                    <div className="specialty-skeleton-text" />
+                  ) : (
+                    <p>
+                      {spec.count} Doctor{spec.count !== 1 ? "s" : ""}
+                    </p>
+                  )}
                 </div>
 
                 {/* Arrow */}
-                <motion.div
-                  className="specialty-arrow"
-                  whileHover={{
-                    x: 4,
-                  }}
-                >
+                <motion.div className="specialty-arrow" whileHover={{ x: 4 }}>
                   <ArrowRight size={17} />
                 </motion.div>
               </motion.article>
             );
           })}
         </div>
-
       </div>
     </section>
   );

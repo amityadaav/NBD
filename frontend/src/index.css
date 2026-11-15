@@ -1,3 +1,6 @@
+/* ============================================================
+   ROOT CSS — MINIMAL FIX
+   ============================================================ */
 
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap");
 
@@ -26,6 +29,7 @@
   --destructive: hsl(0 84% 60%);
   --border: hsl(210 20% 90%);
   --input: hsl(210 20% 90%);
+  --ring: hsl(205 78% 45%);              /* ✅ ADDED — was missing in light mode */
 
   --radius: 12px;
 
@@ -75,15 +79,17 @@
 
 html,
 body {
-  width: 100dvw;
-  height: 100dvh;
+  width: 100%;                /* ✅ FIX: was 100dvw → caused horizontal scroll */
+  max-width: 100%;            /* ✅ added safety net */
+  min-height: 100dvh;         /* ✅ FIX: was height → cut off long content */
+  margin: 0;
+  overflow-x: hidden;         /* ✅ added — kills any remaining horizontal slide */
 }
 
 /* -------------------- */
 /* BODY */
 /* -------------------- */
 body {
-  margin: 0;
   background: var(--background);
   color: var(--foreground);
   font-family: "DM Sans", system-ui, -apple-system, sans-serif;
@@ -93,9 +99,7 @@ body {
 /* -------------------- */
 /* TYPOGRAPHY */
 /* -------------------- */
-h1,
-h2,
-h3 {
+h1, h2, h3 {
   font-family: "Playfair Display", serif;
   font-weight: 700;
 }
@@ -129,9 +133,18 @@ textarea {
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {                        /* ✅ FIX: added textarea */
   outline: none;
   border-color: var(--ring);
+}
+
+/* -------------------- */
+/* FOCUS (keyboard users) */
+/* -------------------- */
+:focus-visible {                        /* ✅ added — a11y */
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 /* -------------------- */
@@ -147,11 +160,8 @@ select:focus {
   box-shadow: var(--card-shadow-hover);
 }
 
-.container {
+.site-container {                       /* ✅ renamed from .container to avoid collision */
   max-width: 1280px;
-  margin: auto;
+  margin: 0 auto;
   padding: 0 16px;
 }
-
-
-

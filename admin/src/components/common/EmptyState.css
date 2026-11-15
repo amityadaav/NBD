@@ -1,0 +1,41 @@
+.es-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.es-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: var(--muted, #f1f5f9);
+  color: var(--muted-foreground, #64748b);
+  opacity: 0.8;
+}
+
+.es-title {
+  margin: 0 0 6px;
+  color: var(--foreground, #0f172a);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.es-desc {
+  margin: 0;
+  max-width: 320px;
+  color: var(--muted-foreground, #64748b);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.es-action {
+  margin-top: 20px;
+}

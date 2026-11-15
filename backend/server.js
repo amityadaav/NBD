@@ -1,65 +1,161 @@
 
-const express = require("express");
+// const express = require("express");
+// const dotenv = require("dotenv");
+// const cors = require("cors");
+// const path = require("path");
+
+// const { dbConnection } = require("./config/database");
+
+// dotenv.config();
+
+// const app = express();
+
+// const allowedOrigins = [
+//   "http://localhost:5173",
+//   "http://localhost:5174",
+//   "http://localhost:3000",
+// ];
+
+// const corsOptions = {
+//   origin: (origin, callback) => {
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       return callback(null, true);
+//     }
+
+//     return callback(new Error(`Origin not allowed: ${origin}`));
+//   },
+//   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization"],
+//   credentials: true,
+// };
+
+// app.use(cors(corsOptions));
+
+// // Body parsing middleware
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: true }));
+
+// // Static uploads
+// app.use(
+//   "/uploads",
+//   express.static(path.join(process.cwd(), "uploads"))
+// );
+
+// // Routes
+// app.use("/api", require("./Routes/authRoutes"));
+
+// app.use("/api/hospitals", require("./Routes/hospitalRoutes"));
+// app.use("/api/appointments", require("./Routes/AppointmentRoutes"));
+// app.use("/api/doctors", require("./Routes/DoctorRoutes"));
+
+// app.use("/api/admin", require("./Routes/AdminRoutes"));
+// app.use("/api/admin/hospitals", require("./Routes/AdminHospitalRoutes"));
+// app.use("/api/admin/appointments", require("./Routes/AdminAppointmentRoutes"));
+// app.use("/api/admin/doctors", require("./Routes/AdminDoctorRoutes"));
+// app.post("/api/hospitals/register-test", (req, res) => {
+//   res.status(200).json({
+//     success: true,
+//     message: "Hospital route is reachable",
+//   });
+// });
+// // Health check
+// app.get("/", (req, res) => {
+//   res.status(200).send("Server Running");
+// });
+
+// // Start server after database connection
+// const PORT = process.env.PORT || 5000;
+
+// const startServer = async () => {
+//   try {
+//     await dbConnection();
+
+//     app.listen(PORT, () => {
+//       console.log(`Server running on port ${PORT}`);
+//     });
+//   } catch (error) {
+//     console.error("Failed to start server:", error.message);
+//     process.exit(1);
+//   }
+// };
+
+// startServer();
 const dotenv = require("dotenv");
+dotenv.config(); // must run before anything that reads process.env
+
+const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
 const { dbConnection } = require("./config/database");
 
-dotenv.config();
-
 const app = express();
 
-// Middleware
-app.use(
-  cors({
-    origin: ["http://localhost:5173"],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+];
 
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`Origin not allowed: ${origin}`));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+
+// Body parsing middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Database connection
-dbConnection();
+// Static PUBLIC uploads only (logos, photos).
+// private_uploads is intentionally NOT served; documents go through the
+// protected /api/admin/hospitals/:id/document endpoint.
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
+// ---------- Public / user routes ----------
+app.use("/api", require("./Routes/authRoutes"));
+app.use("/api/hospitals", require("./Routes/hospitalRoutes"));
+app.use("/api/appointments", require("./Routes/AppointmentRoutes"));
+app.use("/api/doctors", require("./Routes/DoctorRoutes"));
 
+// ---------- Hospital admin ----------
+app.use("/api/hospital-admin", require("./Routes/HospitalAdminRoutes"));
+app.use("/api/hospital-admin", require("./Routes/HospitalAdminManageRoutes"));
 
-app.use(
-  "/uploads",
-  express.static(path.join(process.cwd(), "uploads"))
-);
-// Routes
-const authRoutes = require("./Routes/authRoutes");
-const hospitalRoutes = require("./Routes/hospitalRoutes");
-const appointmentRoutes = require("./Routes/AppointmentRoutes");
-const doctorRoutes = require("./Routes/DoctorRoutes");
-const adminRoutes = require("./Routes/AdminRoutes");
-const adminHospitalRoutes = require("./Routes/AdminHospitalRoutes");
-const adminDoctorRoutes = require("./Routes/AdminDoctorRoutes");
+// ---------- Admin routes ----------
+app.use("/api/admin/hospitals", require("./Routes/AdminHospitalRoutes"));
+app.use("/api/admin/appointments", require("./Routes/AdminAppointmentRoutes"));
+app.use("/api/admin/doctors", require("./Routes/AdminDoctorRoutes"));
+app.use("/api/admin/patients", require("./Routes/adminPatientRoutes"));
+app.use("/api/admin", require("./Routes/AdminRoutes"));
 
-
-
-
-app.use("/api", authRoutes);
-app.use("/api/hospitals", hospitalRoutes);
-app.use("/api/appointments", appointmentRoutes);
-app.use("/api/doctors", doctorRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/admin/hospitals", adminHospitalRoutes);
-app.use("/api/admin/doctors", adminDoctorRoutes);
-
-// Home route
+// Health check
 app.get("/", (req, res) => {
-  res.send("Server Running");
+  res.status(200).send("Server Running");
 });
 
-// Start server
+// Start server after database connection
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, (error) => {
-  if (error) throw error;
+const startServer = async () => {
+  try {
+    await dbConnection();
 
-  console.log(`Server running on port no ${PORT}`);
-});
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error.message);
+    process.exit(1);
+  }
+};
+
+startServer();

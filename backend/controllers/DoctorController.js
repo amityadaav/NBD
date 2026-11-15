@@ -179,52 +179,193 @@
 //   }
 // };
 
+// const mongoose = require("mongoose");
+// const Doctor = require("../models/Doctor");
+// const Hospital = require("../models/Hospital");
+
+// exports.createDoctor = async (req, res) => {
+//   try {
+//     const {
+//       name,
+//       email,
+//       phone,
+//       specialty,
+//       qualification,
+//       experience,
+//       consultationFee,
+//       profileImage,
+//       availableDays,
+//       medicalRegistrationNumber,
+//       hospitalId,
+//     } = req.body;
+
+//     // Required field validation
+//     if (
+//       !name?.trim() ||
+//       !specialty?.trim() ||
+//       !qualification?.trim() ||
+//       !medicalRegistrationNumber?.trim() ||
+//       consultationFee === undefined ||
+//       consultationFee === null ||
+//       hospitalId === undefined ||
+//       hospitalId === null
+//     ) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Please provide all required fields.",
+//       });
+//     }
+
+//     if (!mongoose.isValidObjectId(hospitalId)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid hospital ID.",
+//       });
+//     }
+
+//     if (
+//       !Number.isFinite(Number(consultationFee)) ||
+//       Number(consultationFee) < 0
+//     ) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid consultation fee.",
+//       });
+//     }
+
+//     if (
+//       experience !== undefined &&
+//       (!Number.isFinite(Number(experience)) ||
+//         Number(experience) < 0)
+//     ) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid experience.",
+//       });
+//     }
+
+//     if (
+//       !Array.isArray(availableDays ?? []) ||
+//       (availableDays ?? []).some(
+//         (day) =>
+//           ![
+//             "Monday",
+//             "Tuesday",
+//             "Wednesday",
+//             "Thursday",
+//             "Friday",
+//             "Saturday",
+//             "Sunday",
+//           ].includes(day)
+//       )
+//     ) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid available days.",
+//       });
+//     }
+
+//     // Verify hospital
+//     const hospital = await Hospital.findOne({
+//       _id: hospitalId,
+//       verificationStatus: "Verified",
+//       isActive: true,
+//     }).select("_id admin");
+
+//     if (!hospital) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Verified active hospital not found.",
+//       });
+//     }
+
+//     // Hospital Admin can add doctors only to their own hospital
+//     if (req.user.role === "hospital_admin") {
+//       if (
+//         !req.user.hospitalId ||
+//         hospital._id.toString() !==
+//           req.user.hospitalId.toString() ||
+//         hospital.admin?.toString() !== req.user.id
+//       ) {
+//         return res.status(403).json({
+//           success: false,
+//           message: "You cannot add doctors to this hospital.",
+//         });
+//       }
+//     }
+
+//     const doctor = await Doctor.create({
+//       name: name.trim(),
+//       email,
+//       phone,
+//       specialty: specialty.trim(),
+//       qualification: qualification.trim(),
+//       experience: experience ?? 0,
+//       hospitalId: hospital._id,
+//       consultationFee: Number(consultationFee),
+//       profileImage: profileImage || "",
+//       availableDays: availableDays || [],
+//       medicalRegistrationNumber:
+//         medicalRegistrationNumber.trim(),
+
+//       // Server-controlled fields
+//       createdBy: req.user.id,
+//       verificationStatus: "Pending",
+//       rejectionReason: "",
+//       reviewedBy: null,
+//       reviewedAt: null,
+//       isActive: false,
+//     });
+
+//     return res.status(201).json({
+//       success: true,
+//       message: "Doctor added successfully. Awaiting verification.",
+//       doctor,
+//     });
+//   } catch (error) {
+//     console.error("Create doctor error:", error);
+
+//     if (error.name === "ValidationError") {
+//       return res.status(400).json({
+//         success: false,
+//         message: error.message,
+//       });
+//     }
+
+//     if (error.code === 11000) {
+//       return res.status(409).json({
+//         success: false,
+//         message: "Duplicate doctor record.",
+//       });
+//     }
+
+//     return res.status(500).json({
+//       success: false,
+//       message: "Failed to add doctor.",
+//     });
+//   }
+// };
+
 const mongoose = require("mongoose");
 const Doctor = require("../models/Doctor");
 const Hospital = require("../models/Hospital");
 
-const VALID_DAYS = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
+// ================= CREATE DOCTOR =================
+// POST /api/doctors
+// Hospital Admin only
 
-const parseAvailableDays = (value) => {
-  if (value === undefined || value === null || value === "") {
-    return [];
-  }
-
-  const parsed = typeof value === "string" ? JSON.parse(value) : value;
-
-  if (!Array.isArray(parsed)) {
-    throw new Error("availableDays must be an array.");
-  }
-
-  if (!parsed.every((day) => VALID_DAYS.includes(day))) {
-    throw new Error("Invalid availableDays value.");
-  }
-
-  return [...new Set(parsed)];
-};
-
-// CREATE DOCTOR
-// Route must use authenticate + allowRoles("hospital_admin").
 exports.createDoctor = async (req, res) => {
   try {
     const {
       name,
+      email,
+      phone,
       specialty,
       qualification,
       experience,
       consultationFee,
       availableDays,
       medicalRegistrationNumber,
-      email,
-      phone,
     } = req.body;
 
     if (
@@ -233,7 +374,7 @@ exports.createDoctor = async (req, res) => {
       !qualification?.trim() ||
       !medicalRegistrationNumber?.trim() ||
       consultationFee === undefined ||
-      experience === undefined
+      consultationFee === null
     ) {
       return res.status(400).json({
         success: false,
@@ -241,44 +382,86 @@ exports.createDoctor = async (req, res) => {
       });
     }
 
-    const numericExperience = Number(experience);
-    const numericFee = Number(consultationFee);
-
-    if (
-      !Number.isFinite(numericExperience) ||
-      numericExperience < 0 ||
-      !Number.isFinite(numericFee) ||
-      numericFee < 0
-    ) {
-      return res.status(400).json({
+    if (!req.user?.id || !mongoose.isValidObjectId(req.user.id)) {
+      return res.status(401).json({
         success: false,
-        message: "Experience and consultation fee must be valid non-negative numbers.",
+        message: "Authentication required.",
       });
     }
 
-    // Never accept hospital ownership from the request body.
+    if (req.user.role !== "hospital_admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Only hospital admins can add doctors.",
+      });
+    }
+
+    const fee = Number(consultationFee);
+    const exp = Number(experience ?? 0);
+
+    if (!Number.isFinite(fee) || fee < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid consultation fee.",
+      });
+    }
+
+    if (!Number.isFinite(exp) || exp < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid experience.",
+      });
+    }
+
+    let days = availableDays ?? [];
+
+    if (typeof days === "string") {
+      try {
+        days = JSON.parse(days);
+      } catch {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid availableDays JSON.",
+        });
+      }
+    }
+
+    const validDays = [
+      "Monday", "Tuesday", "Wednesday", "Thursday",
+      "Friday", "Saturday", "Sunday",
+    ];
+
+    if (
+      !Array.isArray(days) ||
+      days.some((day) => !validDays.includes(day))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid available days.",
+      });
+    }
+
+    // Hospital ID comes from the authenticated account.
+    // Never trust hospitalId sent by the client.
+    if (!req.user.hospitalId ||
+        !mongoose.isValidObjectId(req.user.hospitalId)) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is not linked to a hospital.",
+      });
+    }
+
     const hospital = await Hospital.findOne({
       _id: req.user.hospitalId,
       admin: req.user.id,
       verificationStatus: "Verified",
       isActive: true,
-    });
+    }).select("_id");
 
     if (!hospital) {
       return res.status(403).json({
         success: false,
-        message: "Only admins of verified hospitals can register doctors.",
-      });
-    }
-
-    let parsedAvailableDays;
-
-    try {
-      parsedAvailableDays = parseAvailableDays(availableDays);
-    } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
+        message: "Your hospital is not approved or active.",
       });
     }
 
@@ -288,39 +471,34 @@ exports.createDoctor = async (req, res) => {
 
     const doctor = await Doctor.create({
       name: name.trim(),
-      email: email ? email.trim().toLowerCase() : "",
-      phone: phone || "",
+      email: email?.trim().toLowerCase() || undefined,
+      phone: phone?.trim() || undefined,
       specialty: specialty.trim(),
       qualification: qualification.trim(),
-      experience: numericExperience,
+      experience: exp,
+      hospitalId: hospital._id,
+      consultationFee: fee,
+      availableDays: days,
+      profileImage,
       medicalRegistrationNumber:
         medicalRegistrationNumber.trim(),
-      hospitalId: hospital._id,
-      consultationFee: numericFee,
-      availableDays: parsedAvailableDays,
-      profileImage,
+
+      // Server-controlled fields
       createdBy: req.user.id,
       verificationStatus: "Pending",
       rejectionReason: "",
       reviewedBy: null,
       reviewedAt: null,
-      isActive: true,
+      isActive: false,
     });
 
     return res.status(201).json({
       success: true,
-      message: "Doctor submitted for Main Admin verification.",
+      message: "Doctor added successfully. Awaiting verification.",
       doctor,
     });
   } catch (error) {
     console.error("Create doctor error:", error);
-
-    if (error.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        message: "This medical registration number is already registered for this hospital.",
-      });
-    }
 
     if (error.name === "ValidationError") {
       return res.status(400).json({
@@ -329,27 +507,40 @@ exports.createDoctor = async (req, res) => {
       });
     }
 
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Duplicate doctor record.",
+      });
+    }
+
     return res.status(500).json({
       success: false,
-      message: "Failed to register doctor.",
+      message: "Failed to add doctor.",
     });
   }
 };
 
-// PUBLIC: APPROVED DOCTORS AT VERIFIED, ACTIVE HOSPITALS
+// ================= PUBLIC DOCTOR QUERY =================
+
+const PUBLIC_DOCTOR_FIELDS =
+  "name specialty qualification experience hospitalId consultationFee profileImage availableDays verificationStatus";
+
+// Get all approved doctors at verified active hospitals
 exports.getAllDoctors = async (req, res) => {
   try {
     const doctors = await Doctor.find({
       isActive: true,
       verificationStatus: "Approved",
     })
+      .select(PUBLIC_DOCTOR_FIELDS)
       .populate({
         path: "hospitalId",
         match: {
           verificationStatus: "Verified",
           isActive: true,
         },
-        select: "hospitalName hospitalType address specialties",
+        select: "hospitalName address",
       })
       .lean();
 
@@ -364,7 +555,6 @@ exports.getAllDoctors = async (req, res) => {
     });
   } catch (error) {
     console.error("Get doctors error:", error);
-
     return res.status(500).json({
       success: false,
       message: "Failed to fetch doctors.",
@@ -372,27 +562,39 @@ exports.getAllDoctors = async (req, res) => {
   }
 };
 
-// HOSPITAL ADMIN: ONLY OWN HOSPITAL'S DOCTORS
-// Route must use authenticate + allowRoles("hospital_admin").
+// Get approved doctors by hospital
 exports.getDoctorsByHospital = async (req, res) => {
   try {
+    const { hospitalId } = req.params;
+
+    if (!mongoose.isValidObjectId(hospitalId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid hospital ID.",
+      });
+    }
+
     const hospital = await Hospital.findOne({
-      _id: req.user.hospitalId,
-      admin: req.user.id,
+      _id: hospitalId,
       verificationStatus: "Verified",
       isActive: true,
-    });
+    }).select("_id");
 
     if (!hospital) {
-      return res.status(403).json({
+      return res.status(404).json({
         success: false,
-        message: "Hospital access is not available.",
+        message: "Hospital not found.",
       });
     }
 
     const doctors = await Doctor.find({
       hospitalId: hospital._id,
-    }).sort({ createdAt: -1 });
+      isActive: true,
+      verificationStatus: "Approved",
+    })
+      .select(PUBLIC_DOCTOR_FIELDS)
+      .populate("hospitalId", "hospitalName address")
+      .lean();
 
     return res.status(200).json({
       success: true,
@@ -401,7 +603,6 @@ exports.getDoctorsByHospital = async (req, res) => {
     });
   } catch (error) {
     console.error("Get hospital doctors error:", error);
-
     return res.status(500).json({
       success: false,
       message: "Failed to fetch hospital doctors.",
@@ -409,7 +610,7 @@ exports.getDoctorsByHospital = async (req, res) => {
   }
 };
 
-// PUBLIC: SINGLE APPROVED DOCTOR ONLY
+// Get one approved doctor
 exports.getDoctorById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -426,13 +627,14 @@ exports.getDoctorById = async (req, res) => {
       isActive: true,
       verificationStatus: "Approved",
     })
+      .select(PUBLIC_DOCTOR_FIELDS)
       .populate({
         path: "hospitalId",
         match: {
           verificationStatus: "Verified",
           isActive: true,
         },
-        select: "hospitalName hospitalType address specialties",
+        select: "hospitalName address",
       })
       .lean();
 
@@ -448,8 +650,7 @@ exports.getDoctorById = async (req, res) => {
       doctor,
     });
   } catch (error) {
-    console.error("Get doctor error:", error);
-
+    console.error("Get doctor by ID error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch doctor.",

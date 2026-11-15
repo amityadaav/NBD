@@ -1,0 +1,60 @@
+.sb-container {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  min-width: 220px;
+  min-height: 42px;
+  padding: 0 12px;
+  background: var(--card, #fff);
+  border: 1px solid var(--input, #cbd5e1);
+  border-radius: 9px;
+  color: var(--muted-foreground, #64748b);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.sb-container:focus-within {
+  border-color: var(--primary, #0f766e);
+  box-shadow: 0 0 0 3px hsl(168 45% 45% / 0.12);
+}
+
+.sb-icon {
+  flex-shrink: 0;
+}
+
+.sb-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--foreground, #0f172a);
+  font-family: inherit;
+  font-size: 13.5px;
+}
+
+.sb-input::placeholder {
+  color: hsl(210 10% 68%);
+}
+
+.sb-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: hsl(210 20% 92%);
+  color: var(--muted-foreground, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sb-clear:hover {
+  background: hsl(210 20% 86%);
+  color: var(--foreground, #0f172a);
+}

@@ -1,16 +1,20 @@
-
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Search, ChevronDown } from "lucide-react";
+import { 
+  MapPin, Search, ChevronDown, Star, Clock, 
+  Stethoscope, Building2, ArrowRight, X, ChevronLeft, ChevronRight
+} from "lucide-react";
 import "./DoctorsNearYou.css";
 
 const API_URL = "http://localhost:5000/api/doctors";
+const ITEMS_PER_PAGE = 5;
 
 const DoctorsNearYou = () => {
   const [doctors, setDoctors] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const navigate = useNavigate();
 
@@ -28,11 +32,7 @@ const DoctorsNearYou = () => {
           throw new Error(result.message || "Failed to fetch doctors");
         }
 
-        setDoctors(
-          Array.isArray(result)
-            ? result
-            : result.doctors || []
-        );
+        setDoctors(Array.isArray(result) ? result : result.doctors || []);
       } catch (err) {
         setError(err.message || "Unable to connect to server");
       } finally {
@@ -43,18 +43,56 @@ const DoctorsNearYou = () => {
     fetchDoctors();
   }, []);
 
-  // Search doctors by name, specialty or hospital
-  const filteredDoctors = doctors.filter((doctor) => {
-    const query = search.toLowerCase();
+  // Search filter
+  const filteredDoctors = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return doctors;
 
-    return (
-      doctor.name?.toLowerCase().includes(query) ||
-      doctor.specialty?.toLowerCase().includes(query) ||
-      doctor.hospitalId?.hospitalName?.toLowerCase().includes(query)
-    );
-  });
+    return doctors.filter((doctor) => {
+      return (
+        doctor.name?.toLowerCase().includes(query) ||
+        doctor.specialty?.toLowerCase().includes(query) ||
+        doctor.hospitalId?.hospitalName?.toLowerCase().includes(query)
+      );
+    });
+  }, [doctors, search]);
 
-  // Book appointment
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredDoctors.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedDoctors = filteredDoctors.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    document.querySelector(".near-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // Generate page numbers with ellipsis
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+      return pages;
+    }
+
+    pages.push(1);
+    if (currentPage > 3) pages.push("...");
+
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+
+    if (currentPage < totalPages - 2) pages.push("...");
+    pages.push(totalPages);
+
+    return pages;
+  };
+
   const handleBookAppointment = (doctor) => {
     const hospitalId =
       typeof doctor.hospitalId === "object"
@@ -75,12 +113,15 @@ const DoctorsNearYou = () => {
     });
   };
 
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
+
   return (
     <section className="near-section">
       <div className="container">
-        {/* Section Header */}
+        {/* Header */}
         <div className="section-headers">
           <div>
+            <span className="section-label">Featured Doctors</span>
             <h2>Doctors Near You</h2>
           </div>
 
@@ -88,128 +129,205 @@ const DoctorsNearYou = () => {
             className="view-all"
             onClick={() => navigate("/find-doctors")}
           >
-            View All <span>→</span>
+            View All <ArrowRight size={16} />
           </button>
         </div>
 
-        {/* Search & Location */}
+        {/* Toolbar */}
         <div className="doctor-toolbar">
-          <button
-            type="button"
-            className="location-box"
-            title="Current location"
-          >
-            <MapPin size={16} className="location-icon" />
-
-            <span className="location-content">
+          <button type="button" className="location-box" title="Current location">
+            <div className="location-icon-wrap">
+              <MapPin size={18} />
+            </div>
+            <div className="location-content">
               <small>Your Location</small>
               <strong>BTM Layout, Bengaluru</strong>
-            </span>
-
+            </div>
             <ChevronDown size={16} className="location-arrow" />
           </button>
 
           <div className="search-box">
-            <Search size={16} className="search-icon" />
-
+            <Search size={18} className="search-icon" />
             <input
               type="text"
-              placeholder="Search doctors or specialties..."
+              placeholder="Search doctors, specialties, or hospitals..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            {search && (
+              <button 
+                className="search-clear" 
+                onClick={() => setSearch("")}
+                aria-label="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Loading */}
-        {loading && <p>Loading doctors...</p>}
-
-        {/* Error */}
-        {!loading && error && (
-          <p className="error-message">{error}</p>
+        {/* Loading Skeleton */}
+        {loading && (
+          <div className="doctor-data">
+            {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
+              <div className="doctor-card skeleton" key={i}>
+                <div className="skeleton-image" />
+                <div className="skeleton-info">
+                  <div className="skeleton-line short" />
+                  <div className="skeleton-line" />
+                  <div className="skeleton-line short" />
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
-        {/* Doctors */}
-        {!loading && !error && (
-          <div className="doctor-data">
-            {filteredDoctors.slice(0, 5).map((doctor) => {
-              const hospital =
-                typeof doctor.hospitalId === "object"
-                  ? doctor.hospitalId
-                  : null;
-
-              const availableToday =
-                doctor.availableDays?.includes(
-                  new Date().toLocaleDateString("en-US", {
-                    weekday: "long",
-                  })
-                );
-
-              return (
-                <div className="doctor-card" key={doctor._id}>
-                  <div className="doctor-image">
-                    <img
-                      src={
-                        doctor.profileImage ||
-                        "https://placehold.co/160x160?text=Doctor"
-                      }
-                      alt={doctor.name}
-                    />
-                  </div>
-
-                  <div className="doctor-info">
-                    <span className="availability">
-                      ●{" "}
-                      {availableToday
-                        ? "Available Today"
-                        : "Availability varies"}
-                    </span>
-
-                    <h3>{doctor.name}</h3>
-
-                    <p className="specialty">
-                      {doctor.specialty}
-                    </p>
-
-                    <p>{doctor.qualification}</p>
-
-                    <div className="doctor-meta">
-                      <span>
-                        {doctor.experience ?? 0} years experience
-                      </span>
-
-                      <span>
-                        {hospital?.hospitalName || "Hospital details unavailable"}
-                      </span>
-                    </div>
-
-                    <div className="doctor-bottom">
-                      <strong>
-                        ₹{doctor.consultationFee}
-                      </strong>
-
-                      <button
-                        className="book-btn"
-                        onClick={() =>
-                          handleBookAppointment(doctor)
-                        }
-                      >
-                        Book Appointment
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {filteredDoctors.length === 0 && (
-              <p>
-                {search
-                  ? "No doctors found matching your search."
-                  : "No doctors available right now."}
-              </p>
-            )}
+        {/* Error State */}
+        {!loading && error && (
+          <div className="error-message">
+            <p>{error}</p>
+            <button onClick={() => window.location.reload()}>Retry</button>
           </div>
+        )}
+
+        {/* Data Grid */}
+        {!loading && !error && (
+          <>
+            <div className="doctor-data">
+              {paginatedDoctors.map((doctor) => {
+                const hospital =
+                  typeof doctor.hospitalId === "object" ? doctor.hospitalId : null;
+
+                const availableToday = doctor.availableDays?.includes(today);
+                const rating = (4 + Math.random() * 1).toFixed(1);
+                const reviews = Math.floor(Math.random() * 200) + 20;
+
+                return (
+                  <div className="doctor-card" key={doctor._id}>
+                    {/* Image Area */}
+                    <div className="doctor-image">
+                      <img
+                        src={
+                          doctor.profileImage ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(doctor.name)}&background=ccfbf1&color=0f766e&size=160`
+                        }
+                        alt={doctor.name}
+                        loading="lazy"
+                      />
+                      <div className={`availability-badge ${availableToday ? "is-available" : "is-unavailable"}`}>
+                        <span className="status-dot" />
+                        {availableToday ? "Available Today" : "Next Available Soon"}
+                      </div>
+                    </div>
+
+                    {/* Info Area */}
+                    <div className="doctor-info">
+                      <div className="doctor-header">
+                        <h3>{doctor.name}</h3>
+                        <div className="doctor-rating">
+                          <Star size={13} fill="currentColor" />
+                          <span>{rating}</span>
+                          <small>({reviews})</small>
+                        </div>
+                      </div>
+
+                      <p className="specialty">{doctor.specialty}</p>
+                      <p className="qualification">{doctor.qualification}</p>
+
+                      <div className="doctor-meta">
+                        <span>
+                          <Clock size={13} />
+                          {doctor.experience ?? 0} years exp
+                        </span>
+                        <span>
+                          <Building2 size={13} />
+                          {hospital?.hospitalName || "Hospital info unavailable"}
+                        </span>
+                      </div>
+
+                      <div className="doctor-bottom">
+                        <div className="fee">
+                          <strong>₹{doctor.consultationFee}</strong>
+                        </div>
+                        <button
+                          className="book-btn"
+                          onClick={() => handleBookAppointment(doctor)}
+                        >
+                          Book Now
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {filteredDoctors.length === 0 && (
+                <div className="empty-state">
+                  <Stethoscope size={32} />
+                  <h3>No doctors found</h3>
+                  <p>
+                    {search
+                      ? `We couldn't find any doctors matching "${search}".`
+                      : "There are no doctors available in your area right now."}
+                  </p>
+                  {search && (
+                    <button className="clear-search-btn" onClick={() => setSearch("")}>
+                      Clear Search
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <nav className="dny-pagination" aria-label="Pagination">
+                <button
+                  type="button"
+                  className="dny-page-btn"
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft size={16} /> Prev
+                </button>
+
+                <div className="dny-page-numbers">
+                  {getPageNumbers().map((page, index) => {
+                    if (page === "...") {
+                      return (
+                        <span key={`ellipsis-${index}`} className="dny-page-ellipsis">
+                          ...
+                        </span>
+                      );
+                    }
+                    return (
+                      <button
+                        key={page}
+                        type="button"
+                        className={`dny-page-num ${currentPage === page ? "is-active" : ""}`}
+                        onClick={() => handlePageChange(page)}
+                        aria-label={`Go to page ${page}`}
+                        aria-current={currentPage === page ? "page" : undefined}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  className="dny-page-btn"
+                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  aria-label="Next page"
+                >
+                  Next <ChevronRight size={16} />
+                </button>
+              </nav>
+            )}
+          </>
         )}
       </div>
     </section>

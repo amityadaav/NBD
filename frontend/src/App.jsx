@@ -14,6 +14,7 @@ import Signup from "./pages/Signup/Signup";
 import BloodDonation from "./pages/BloodDonation/BloodDonation";
 import ListYourClinic from "./pages/ListYourClinic/ListYourClinic";
 import BecomeDonor from "./pages/BecomeDonor/BecomeDonor";
+import HospitalDetails from "./pages/HospitalDetails/HospitalDetails";
 
 const App = () => {
   return (
@@ -28,6 +29,7 @@ const App = () => {
         <Route path="/specialties" element={<Specialties />} />
         <Route path="/hospitals" element={<Hospitals />} />
         <Route path="/about" element={<About />} />
+        <Route path="/hospitals/:id" element={<HospitalDetails />} />
         <Route path="/blood-donation" element={<BloodDonation/>} />
         <Route path="/become-donor" element={<BecomeDonor />} />
         <Route path="/list-your-clinic" element={<ListYourClinic/>}/>

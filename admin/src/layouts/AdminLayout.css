@@ -1,0 +1,100 @@
+/* ============================================================
+   Admin Layout — Refined Professional Shell
+   ============================================================ */
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--background, #f8fafc);
+  color: var(--foreground, #0f172a);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin-layout * { box-sizing: border-box; }
+
+/* ---------- Main column ---------- */
+.admin-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ---------- Content area ---------- */
+.admin-content {
+  flex: 1;
+  min-height: 0;
+  padding: 28px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  background:
+    radial-gradient(circle at 0% 0%, hsl(168 45% 97% / 0.55), transparent 45%),
+    radial-gradient(circle at 100% 0%, hsl(205 78% 97% / 0.4), transparent 40%),
+    var(--background, #f8fafc);
+  scrollbar-width: thin;
+  scrollbar-color: hsl(210 20% 82%) transparent;
+}
+
+.admin-content::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.admin-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-content::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+  background-color: hsl(210 20% 84%);
+  transition: background-color 0.15s ease;
+}
+
+.admin-content::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(210 20% 72%);
+}
+
+/* Content wrapper — entry animation & max width */
+.admin-content-inner {
+  max-width: 100%;
+  margin: 0 auto;
+  animation: admin-content-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes admin-content-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Navbar shadow when content scrolls ---------- */
+.admin-layout.is-scrolled :where(.hospital-navbar, .navbar, .admin-navbar) {
+  box-shadow: 0 4px 16px -8px rgba(15, 23, 42, 0.08);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1024px) {
+  .admin-content { padding: 22px; }
+}
+
+@media (max-width: 768px) {
+  .admin-content {
+    padding: 16px;
+    background: var(--background, #f8fafc);
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-content { padding: 12px; }
+}
+
+/* ---------- Reduce-motion respect ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .admin-content { scroll-behavior: auto; }
+  .admin-content-inner { animation: none; }
+}

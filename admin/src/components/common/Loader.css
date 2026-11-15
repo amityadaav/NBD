@@ -1,0 +1,29 @@
+.ld-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.ld-fullscreen {
+  min-height: 60vh;
+}
+
+.ld-spinner {
+  color: var(--primary, #0f766e);
+  animation: ld-spin 0.9s linear infinite;
+}
+
+@keyframes ld-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ld-text {
+  margin: 0;
+  color: var(--muted-foreground, #64748b);
+  font-size: 13px;
+  font-weight: 500;
+}

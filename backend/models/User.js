@@ -31,12 +31,6 @@ const UserSchema = new Schema(
       trim: true
     },
 
-    role: {
-      type: String,
-      enum: ["patient", "doctor", "admin"],
-      default: "patient",
-    },
-
     profileImage: {
       type: String,
       default: "",
@@ -86,15 +80,9 @@ const UserSchema = new Schema(
       type: Boolean,
       default: true,
     },
-    role: {
+role: {
   type: String,
-  enum: [
-    "patient",
-    "doctor",
-    "hospital_admin",
-    "super_admin",
-    "admin", // Legacy role: migrate existing admin accounts
-  ],
+  enum: ["patient", "doctor", "hospital_admin", "super_admin", "admin"],
   default: "patient",
 },
 
@@ -109,6 +97,6 @@ hospitalId: {
   }
 );
 
-const UserData = model("UserData", UserSchema);
+const User = model("User", UserSchema);
 
-module.exports = UserData;
+module.exports = User;
